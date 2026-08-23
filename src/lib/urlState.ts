@@ -15,21 +15,24 @@
  * a chi lo apre.
  */
 import { isMetricId, type AnyMetricId } from '@/lib/mapMetrics';
+import { clampStep } from '@/lib/tour';
 import type { SelectedPlace } from '@/types';
 import { detectLocale } from '@/i18n/locale';
 import { DICTIONARIES } from '@/i18n/dictionaries';
 import { translate } from '@/i18n/t';
 
 /** I pannelli a tutto schermo: se ne apre uno per volta, e l'URL se lo ricorda. */
-export type PanelId = 'sectors' | 'boundaries' | 'actions' | 'future';
+export type PanelId = 'sectors' | 'boundaries' | 'actions' | 'future' | 'knowledge';
 
-const PANEL_IDS: PanelId[] = ['sectors', 'boundaries', 'actions', 'future'];
+const PANEL_IDS: PanelId[] = ['sectors', 'boundaries', 'actions', 'future', 'knowledge'];
 
 export interface UrlState {
   year: number | null;
   place: SelectedPlace | null;
   panel: PanelId | null;
   metric: AnyMetricId | null;
+  /** Passo del percorso guidato, o null se non è in corso. */
+  tour: number | null;
 }
 
 
@@ -75,6 +78,7 @@ export function readUrlState(): UrlState {
       : null,
     panel: PANEL_IDS.includes(q.get('panel') as PanelId) ? (q.get('panel') as PanelId) : null,
     metric: isMetricId(metric) ? metric : null,
+    tour: clampStep(q.has('tour') ? Number(q.get('tour')) : null),
   };
 }
 
@@ -95,6 +99,7 @@ export function writeUrlState(state: UrlState): void {
   }
   if (state.panel) q.set('panel', state.panel);
   if (state.metric) q.set('layer', state.metric);
+  if (state.tour !== null) q.set('tour', String(state.tour));
 
   const query = q.toString();
   const next = `${window.location.pathname}${query ? `?${query}` : ''}`;

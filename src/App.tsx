@@ -1,20 +1,24 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AlertTriangle, Loader2, MousePointerClick } from 'lucide-react';
+import { AlertTriangle, Compass, Loader2, MousePointerClick } from 'lucide-react';
 import { ClimateMap } from '@/components/ClimateMap';
 import { LayerControls } from '@/components/LayerControls';
 import { NavBar } from '@/components/NavBar';
 import { ActionsPanel } from '@/components/ActionsPanel';
 import { BoundariesPanel } from '@/components/BoundariesPanel';
+import { KnowledgePanel } from '@/components/KnowledgePanel';
+import { Tour } from '@/components/Tour';
 import { FuturePanel } from '@/components/FuturePanel';
 import { SectorsPanel } from '@/components/SectorsPanel';
 import { TimelineSlider } from '@/components/TimelineSlider';
 import { loadClimateGrid, type ClimateGrid } from '@/lib/climateData';
 import { loadCountryEmissions, type CountryEmissions } from '@/lib/countryEmissions';
-import { isPollutionMetric, type AnyMetricId } from '@/lib/mapMetrics';
+import { isAdaptationMetric, isPollutionMetric, type AnyMetricId } from '@/lib/mapMetrics';
+import { loadAdaptation, mergeAdaptation, type AdaptationTable } from '@/lib/adaptation';
 import { loadPollution, mergeIntoCountries, type PollutionTable } from '@/lib/pollution';
 import { placeSubtitle } from '@/lib/format';
 import type { Place } from '@/lib/openMeteo';
 import { readUrlState, writeUrlState, type PanelId } from '@/lib/urlState';
+import { TOUR_STEPS, type TourStep } from '@/lib/tour';
 import type { SelectedPlace } from '@/types';
 import { useT } from '@/i18n/LocaleProvider';
 
@@ -37,9 +41,11 @@ export default function App() {
   const [playing, setPlaying] = useState(false);
   const [place, setPlace] = useState<SelectedPlace | null>(INITIAL.place);
   const [panel, setPanel] = useState<PanelId | null>(INITIAL.panel);
+  const [tourStep, setTourStep] = useState<number | null>(INITIAL.tour);
   const [metric, setMetric] = useState<AnyMetricId | null>(null);
   const [countries, setCountries] = useState<CountryEmissions | null>(null);
   const [pollution, setPollution] = useState<PollutionTable | null>(null);
+  const [adaptation, setAdaptation] = useState<AdaptationTable | null>(null);
   const [countriesLoading, setCountriesLoading] = useState(false);
   const [countriesError, setCountriesError] = useState<string | null>(null);
 
@@ -100,6 +106,7 @@ export default function App() {
    */
   const countriesRequested = useRef(false);
   const pollutionRequested = useRef(false);
+  const adaptationRequested = useRef(false);
   const handleMetricChange = useCallback((next: AnyMetricId | null) => {
     setMetric(next);
     if (!next) return;
@@ -126,6 +133,16 @@ export default function App() {
           pollutionRequested.current = false;
         });
     }
+
+    if (isAdaptationMetric(next) && !adaptationRequested.current) {
+      adaptationRequested.current = true;
+      loadAdaptation()
+        .then(setAdaptation)
+        .catch((err: Error) => {
+          setCountriesError(err.message);
+          adaptationRequested.current = false;
+        });
+    }
   }, []);
 
   /**
@@ -133,10 +150,42 @@ export default function App() {
    * quando cambia una delle due, così la mappa rifà `setData` una volta e non
    * a ogni render.
    */
-  const mapCountries = useMemo(
-    () => (countries && pollution ? mergeIntoCountries(countries, pollution) : countries),
-    [countries, pollution],
+  const mapCountries = useMemo(() => {
+    if (!countries) return null;
+    let merged = countries;
+    if (pollution) merged = mergeIntoCountries(merged, pollution);
+    if (adaptation) merged = mergeAdaptation(merged, adaptation);
+    return merged;
+  }, [countries, pollution, adaptation]);
+
+  /**
+   * Un passo del percorso è uno stato dell'app, non una schermata: applica
+   * anno, layer e pannello e poi si toglie di mezzo. Passa da
+   * handleMetricChange perché è quella la porta che fa partire i download.
+   */
+  const applyTourStep = useCallback(
+    (index: number) => {
+      const step: TourStep | undefined = TOUR_STEPS[index];
+      if (!step) return;
+      setTourStep(index);
+      if (step.metric !== undefined) handleMetricChange(step.metric);
+      if (step.panel !== undefined) setPanel(step.panel);
+      if (step.year !== undefined && grid) {
+        setPlaying(false);
+        setYear(step.year === 'latest' ? grid.meta.endYear : step.year);
+      }
+    },
+    [grid, handleMetricChange],
   );
+
+  // Il percorso ripreso da un link va applicato una volta sola, e solo quando
+  // la griglia c'è: prima di allora non esiste un anno da mostrare.
+  const tourApplied = useRef(false);
+  useEffect(() => {
+    if (tourApplied.current || INITIAL.tour === null || !grid) return;
+    tourApplied.current = true;
+    applyTourStep(INITIAL.tour);
+  }, [grid, applyTourStep]);
 
   // Il layer chiesto dal link entra dalla stessa porta di un click: è quella
   // che fa partire il download dei paesi.
@@ -147,17 +196,17 @@ export default function App() {
   useEffect(() => {
     if (year === null) return;
     const id = setTimeout(
-      () => writeUrlState({ year, place, panel, metric }),
+      () => writeUrlState({ year, place, panel, metric, tour: tourStep }),
       URL_WRITE_DELAY_MS,
     );
     return () => clearTimeout(id);
-  }, [year, place, panel, metric]);
+  }, [year, place, panel, metric, tourStep]);
 
   // Keyboard scrubbing, ignored while the search field has focus — e mentre il
   // pannello a tutto schermo è aperto: lì "spazio" non deve animare una mappa
   // che nessuno sta guardando.
   useEffect(() => {
-    if (!grid || year === null || panel) return;
+    if (!grid || year === null || panel || tourStep !== null) return;
     const onKey = (e: KeyboardEvent) => {
       const el = document.activeElement;
       if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) return;
@@ -175,7 +224,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [grid, year, panel]);
+  }, [grid, year, panel, tourStep]);
 
   const marker = useMemo(
     () => (place ? { latitude: place.latitude, longitude: place.longitude, label: place.name } : null),
@@ -232,6 +281,15 @@ export default function App() {
                 <span>
                   {t('app.hintIntro')} {t('app.hintPressPrefix')} <Kbd>{t('app.spaceKey')}</Kbd>{' '}
                   {t('app.hintPressMid')} <Kbd>←</Kbd> <Kbd>→</Kbd> {t('app.hintPressSuffix')}
+                  {/* Il percorso si offre qui e non in barra: è il posto dove
+                      guarda chi è appena arrivato e non sa da dove cominciare. */}
+                  <button
+                    onClick={() => applyTourStep(0)}
+                    className="mt-2 flex items-center gap-1.5 rounded-lg border border-sky-400/30 bg-sky-500/10 px-2.5 py-1.5 text-[11px] font-medium text-sky-200 transition hover:border-sky-400/50 hover:bg-sky-500/20"
+                  >
+                    <Compass className="h-3.5 w-3.5" />
+                    {t('tour.start')}
+                  </button>
                 </span>
               </div>
             )}
@@ -258,6 +316,7 @@ export default function App() {
               onMetricChange={handleMetricChange}
               meta={countries?.meta ?? null}
               pollutionMeta={pollution?.meta ?? null}
+              adaptationMeta={adaptation?.meta ?? null}
               loading={countriesLoading}
               error={countriesError}
             />
@@ -280,6 +339,11 @@ export default function App() {
       {panel === 'boundaries' && <BoundariesPanel onClose={() => setPanel(null)} />}
       {panel === 'actions' && <ActionsPanel onClose={() => setPanel(null)} />}
       {panel === 'future' && <FuturePanel onClose={() => setPanel(null)} />}
+      {panel === 'knowledge' && <KnowledgePanel onClose={() => setPanel(null)} />}
+
+      {tourStep !== null && (
+        <Tour step={tourStep} onStep={applyTourStep} onExit={() => setTourStep(null)} />
+      )}
     </div>
   );
 }

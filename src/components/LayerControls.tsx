@@ -3,12 +3,15 @@ import { Legend } from '@/components/Legend';
 import type { CountryEmissions, MetricId } from '@/lib/countryEmissions';
 import {
   familyOf,
+  isAdaptationMetric,
   isPollutionMetric,
   metricsFor,
   type AnyMetricId,
   type MapMode,
+  type MetricFamily,
 } from '@/lib/mapMetrics';
 import { METRIC_SOURCE, type PollutionMetricId, type PollutionTable } from '@/lib/pollution';
+import type { AdaptationTable } from '@/lib/adaptation';
 import { useI18n } from '@/i18n/LocaleProvider';
 
 interface Props {
@@ -18,6 +21,7 @@ interface Props {
   onMetricChange: (metric: AnyMetricId | null) => void;
   meta: CountryEmissions['meta'] | null;
   pollutionMeta: PollutionTable['meta'] | null;
+  adaptationMeta: AdaptationTable['meta'] | null;
   loading: boolean;
   error: string | null;
 }
@@ -26,7 +30,11 @@ interface Props {
  * L'ultima metrica scelta per famiglia: tornare su una scheda non deve
  * ricominciare dalla prima voce come se non ci fossi mai stato.
  */
-const lastOf: Record<'co2' | 'pollution', AnyMetricId> = { co2: 'pc', pollution: 'pm25' };
+const lastOf: Record<MetricFamily, AnyMetricId> = {
+  co2: 'pc',
+  pollution: 'pm25',
+  adaptation: 'gain',
+};
 
 /**
  * Tre domande sulla stessa mappa: cosa succede qui (le anomalie), chi ha
@@ -43,6 +51,7 @@ export function LayerControls({
   onMetricChange,
   meta,
   pollutionMeta,
+  adaptationMeta,
   loading,
   error,
 }: Props) {
@@ -64,6 +73,9 @@ export function LayerControls({
         </ModeTab>
         <ModeTab active={mode === 'pollution'} onClick={() => onMetricChange(lastOf.pollution)}>
           {t('layerControls.beyondCo2')}
+        </ModeTab>
+        <ModeTab active={mode === 'adaptation'} onClick={() => onMetricChange(lastOf.adaptation)}>
+          {t('layerControls.whoCopes')}
         </ModeTab>
       </div>
 
@@ -131,7 +143,12 @@ export function LayerControls({
               {active.blurb}
             </p>
 
-            <MetaLine metric={metric} meta={meta} pollutionMeta={pollutionMeta} />
+            <MetaLine
+              metric={metric}
+              meta={meta}
+              pollutionMeta={pollutionMeta}
+              adaptationMeta={adaptationMeta}
+            />
           </>
         )
       )}
@@ -148,13 +165,29 @@ function MetaLine({
   metric,
   meta,
   pollutionMeta,
+  adaptationMeta,
 }: {
   metric: AnyMetricId | null;
   meta: CountryEmissions['meta'] | null;
   pollutionMeta: PollutionTable['meta'] | null;
+  adaptationMeta: AdaptationTable['meta'] | null;
 }) {
   const { t } = useI18n();
   if (!metric) return null;
+
+  if (isAdaptationMetric(metric)) {
+    if (!adaptationMeta) return null;
+    return (
+      <p className="mt-1.5 text-[10px] leading-relaxed text-slate-600">
+        {t('layerControls.metaLine', {
+          year: adaptationMeta.years[metric],
+          coverage: adaptationMeta.coverage[metric],
+          countries: adaptationMeta.countries,
+          source: adaptationMeta.source,
+        })}
+      </p>
+    );
+  }
 
   if (isPollutionMetric(metric)) {
     if (!pollutionMeta) return null;

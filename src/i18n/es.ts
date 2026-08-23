@@ -45,6 +45,7 @@ export const es = {
   },
   layerControls: {
     beyondCo2: 'Más allá del CO₂',
+    whoCopes: 'Quién aguanta',
     whoSuffers: 'Quién lo sufre',
     whoCauses: 'Quién lo causa',
     loadingCountries: 'Cargando datos por país…',
@@ -160,6 +161,15 @@ export const es = {
     supportDemands: 'exige más acción política',
     supportGap:
       'Y aquí está el punto: **todos subestiman a los demás**. Las personas actúan de forma condicional — hago mi parte si creo que los demás hacen la suya — así que creerse en minoría cuando se está en el {demands}% es ya un freno. Por eso «hablar de ello» es una palanca y no una frase hecha.',
+    foodHeading: 'Qué hay en el plato',
+    foodIntro:
+      'La fila «dieta vegetal» de arriba vale 0,8 t al año, pero esconde dos órdenes de magnitud dentro de la misma compra. Kilogramos de CO₂e por kilo de producto, del campo a la mesa.',
+    foodUnit: 'kg CO₂e por kg',
+    foodTransportNote:
+      'El transporte es de media el {share}% del total. Es el número que desmonta el «come local»: cambiar **qué** se come pesa mucho más que cambiar **de dónde viene**.',
+    foodLandLabel: '{value} m² de tierra por kg',
+    foodLoading: 'Cargando los datos de alimentos…',
+    foodUnavailable: 'Datos de alimentos no disponibles. Genéralos con',
   },
   futurePanel: {
     navShort: 'Futuro',
@@ -199,6 +209,26 @@ export const es = {
     lcoeGeothermal: 'Geotérmica',
     loading: 'Cargando las series…',
     unavailable: 'Datos no disponibles. Genéralos con',
+  },
+  tour: {
+    start: 'Enséñamelo en orden',
+    next: 'Siguiente',
+    prev: 'Atrás',
+    finish: 'Entendido',
+    exit: 'Salir del recorrido',
+  },
+  knowledge: {
+    navShort: 'Método',
+    navLong: 'Cómo lo sabemos',
+    heading: 'Cómo lo sabemos',
+    subheading: 'Desde cuándo lo sabemos, y con qué convenciones se mide',
+    close: 'Cerrar',
+    timelineHeading: 'Cuándo lo supimos',
+    timelineIntro:
+      'La física básica es de 1856, el primer cálculo de 1896, la primera alerta formal a un jefe de gobierno de 1965. «No se podía saber» nunca fue una opción.',
+    methodHeading: 'Las convenciones, explicadas una vez',
+    methodIntro:
+      'Cada panel de esta app declara en letra pequeña la convención que está usando. Aquí están explicadas por extenso: son las trampas en las que cae casi todo lo que se lee por ahí, y también la forma de comprobar si esta app ha caído en ellas.',
   },
   producers: {
     tab: 'Quién lo extrae',

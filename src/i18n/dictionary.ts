@@ -54,6 +54,7 @@ export interface Dictionary {
     whoSuffers: string;
     whoCauses: string;
     beyondCo2: string;
+    whoCopes: string;
     loadingCountries: string;
     generateFileHint: string;
     metaLine: string;
@@ -148,6 +149,13 @@ export interface Dictionary {
     supportNorms: string;
     supportDemands: string;
     supportGap: string;
+    foodHeading: string;
+    foodIntro: string;
+    foodUnit: string;
+    foodTransportNote: string;
+    foodLandLabel: string;
+    foodLoading: string;
+    foodUnavailable: string;
   };
   futurePanel: {
     navShort: string;
@@ -180,6 +188,24 @@ export interface Dictionary {
     lcoeGeothermal: string;
     loading: string;
     unavailable: string;
+  };
+  tour: {
+    start: string;
+    next: string;
+    prev: string;
+    finish: string;
+    exit: string;
+  };
+  knowledge: {
+    navShort: string;
+    navLong: string;
+    heading: string;
+    subheading: string;
+    close: string;
+    timelineHeading: string;
+    timelineIntro: string;
+    methodHeading: string;
+    methodIntro: string;
   };
   producers: {
     tab: string;

@@ -45,6 +45,7 @@ export const en = {
   },
   layerControls: {
     beyondCo2: 'Beyond CO₂',
+    whoCopes: 'Who copes',
     whoSuffers: 'Who suffers it',
     whoCauses: 'Who causes it',
     loadingCountries: 'Loading country data…',
@@ -159,6 +160,15 @@ export const en = {
     supportDemands: 'demand more political action',
     supportGap:
       'And here is the point: **everyone underestimates everyone else**. People act conditionally — I do my part if I think others do theirs — so believing you are in the minority when you are in the {demands}% is itself a brake. It is why "talking about it" is a lever and not a platitude.',
+    foodHeading: 'What is on the plate',
+    foodIntro:
+      'The "plant-based diet" row above is worth 0.8 t a year, but it hides two orders of magnitude inside the same shopping basket. Kilograms of CO₂e per kilogram of product, from field to table.',
+    foodUnit: 'kg CO₂e per kg',
+    foodTransportNote:
+      'Transport is on average {share}% of the total. It is the number that dismantles "eat local": changing **what** you eat weighs far more than changing **where it came from**.',
+    foodLandLabel: '{value} m² of land per kg',
+    foodLoading: 'Loading the food data…',
+    foodUnavailable: 'Food data unavailable. Generate it with',
   },
   futurePanel: {
     navShort: 'Future',
@@ -198,6 +208,26 @@ export const en = {
     lcoeGeothermal: 'Geothermal',
     loading: 'Loading the series…',
     unavailable: 'Data unavailable. Generate it with',
+  },
+  tour: {
+    start: 'Show me in order',
+    next: 'Next',
+    prev: 'Back',
+    finish: 'Got it',
+    exit: 'Leave the tour',
+  },
+  knowledge: {
+    navShort: 'Method',
+    navLong: 'How we know',
+    heading: 'How we know',
+    subheading: 'Since when we have known, and by what conventions it is measured',
+    close: 'Close',
+    timelineHeading: 'When we found out',
+    timelineIntro:
+      'The basic physics is from 1856, the first calculation from 1896, the first formal warning to a head of government from 1965. "Nobody could have known" was never on the table.',
+    methodHeading: 'The conventions, explained once',
+    methodIntro:
+      'Every panel in this app declares, in small print, the convention it is using. Here they are spelled out: they are the traps almost everything you read falls into, and also the way to check whether this app fell into them.',
   },
   producers: {
     tab: 'Who extracts it',

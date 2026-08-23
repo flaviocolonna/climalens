@@ -46,6 +46,7 @@ export const it = {
   },
   layerControls: {
     beyondCo2: 'Oltre la CO₂',
+    whoCopes: 'Chi lo regge',
     whoSuffers: 'Chi lo subisce',
     whoCauses: 'Chi lo causa',
     loadingCountries: 'Carico i dati per paese…',
@@ -160,6 +161,15 @@ export const it = {
     supportDemands: 'chiede più azione politica',
     supportGap:
       'E qui sta il punto: **tutti sottostimano gli altri**. Le persone agiscono in modo condizionale — faccio la mia parte se penso che la facciano anche gli altri — quindi credere di essere in minoranza quando si è nell’{demands}% è di per sé un freno. È il motivo per cui «parlarne» è una leva e non un modo di dire.',
+    foodHeading: 'Cosa c’è nel piatto',
+    foodIntro:
+      'La riga «dieta vegetale» qui sopra vale 0,8 t all’anno, ma nasconde due ordini di grandezza dentro la stessa spesa. Chilogrammi di CO₂e per chilo di prodotto, dal campo alla tavola.',
+    foodUnit: 'kg CO₂e per kg',
+    foodTransportNote:
+      'Il trasporto è in media il {share}% del totale. È il numero che smonta il «mangia locale»: cambiare **cosa** si mangia pesa molto più di cambiare **da dove viene**.',
+    foodLandLabel: '{value} m² di terra per kg',
+    foodLoading: 'Carico i dati sugli alimenti…',
+    foodUnavailable: 'Dati sugli alimenti non disponibili. Generali con',
   },
   futurePanel: {
     navShort: 'Futuro',
@@ -199,6 +209,26 @@ export const it = {
     lcoeGeothermal: 'Geotermico',
     loading: 'Carico le serie…',
     unavailable: 'Dati non disponibili. Generali con',
+  },
+  tour: {
+    start: 'Fammi vedere in ordine',
+    next: 'Avanti',
+    prev: 'Indietro',
+    finish: 'Ho capito',
+    exit: 'Esci dal percorso',
+  },
+  knowledge: {
+    navShort: 'Metodo',
+    navLong: 'Come lo sappiamo',
+    heading: 'Come lo sappiamo',
+    subheading: 'Da quando lo sappiamo, e con che convenzioni si misura',
+    close: 'Chiudi',
+    timelineHeading: 'Quando l’abbiamo saputo',
+    timelineIntro:
+      'La fisica di base è del 1856, il primo calcolo del 1896, il primo allarme formale a un capo di governo del 1965. «Non si poteva sapere» non è mai stata un’opzione.',
+    methodHeading: 'Le convenzioni, spiegate una volta',
+    methodIntro:
+      'Ogni pannello di quest’app dichiara in piccolo la convenzione che sta usando. Qui sono spiegate per esteso: sono le trappole in cui cade quasi tutto quello che si legge in giro, ed è anche il modo per controllare se questa app ci è caduta.',
   },
   producers: {
     tab: 'Chi le estrae',

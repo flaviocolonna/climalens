@@ -7,8 +7,7 @@ import {
   fillColorExpression,
   type CountryEmissions,
 } from '@/lib/countryEmissions';
-import { resolveMetric, type AnyMetricId } from '@/lib/mapMetrics';
-import type { MergedCountryProps } from '@/lib/pollution';
+import { resolveMetric, type AnyMetricId, type MergedCountryProps } from '@/lib/mapMetrics';
 import { AnomalyRenderer, MAX_MERCATOR_LAT } from '@/lib/gridRenderer';
 import { useI18n } from '@/i18n/LocaleProvider';
 

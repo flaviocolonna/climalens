@@ -1,345 +1,650 @@
 # ClimaLens
 
-Mappa interattiva di come è cambiata la temperatura della Terra dal **1880 al 2025**.
-Scorri gli anni, cerca un luogo, guarda la sua curva — poi ribalta la mappa e
-guarda chi quel riscaldamento lo ha causato.
+An interactive map of how Earth's temperature has changed from **1880 to 2025**.
+Scrub the years, search a place, look at its curve — then flip the map over and
+look at who caused that warming.
 
-Dati reali, nessun mock: **NASA GISTEMP v4** per le anomalie, **ERA5** (via
-Open-Meteo) per le temperature assolute e i giorni sopra soglia, **Climate
-Watch** per i settori, **Global Carbon Budget** per le emissioni per paese.
+Real data, no mocks: **NASA GISTEMP v4** for the anomalies, **ERA5** (via
+Open-Meteo) for absolute temperatures, felt days and air quality, **Climate
+Watch** for sectors, **Global Carbon Budget** for per-country emissions, and a
+dozen other open sources named where they are used.
 
 ---
 
-## Come funziona
+## Start here: the tour
 
-Il pezzo interessante non è la mappa, è la pipeline dati.
+The app grew to five full-screen panels, eleven map metrics and a location panel
+with eight sections. Content stopped being the bottleneck a while ago; the
+bottleneck is that someone arriving sees a map and five buttons with no idea
+what order to read them in.
 
-GISTEMP pubblica le anomalie mensili su griglia 2°×2° in un NetCDF-3 da 57 MB
-(1758 mesi × 90 × 180 celle, Int16). Troppo per il browser, ma non serve tutto:
-`scripts/build-climate-data.mjs` lo collassa in **medie annuali** e produce un
-binario Int16 piatto da 4,5 MB (~1,5 MB gzippato) più un sidecar JSON.
+So there is a **nine-step tour**, offered in the hint card on first arrival. Each
+step is *a state of the app*, not a new screen — the same map, the same panels —
+in the order the argument actually holds together:
+
+> what is happening → the same map 75 years ago → your own town → who caused it
+> → what you breathe → who can cope → where it comes from → where it leads →
+> what you can do
+
+It only works because the whole state was already addressable by URL: the tour
+is, literally, nine internal links. `?tour=3` resumes it at step four.
+
+## How it works
+
+The interesting part is not the map, it is the data pipeline.
+
+GISTEMP publishes monthly anomalies on a 2°×2° grid inside a 57 MB NetCDF-3
+file (1,758 months × 90 × 180 cells, Int16). Too much for a browser, and not all
+of it is needed: `scripts/build-climate-data.mjs` collapses it into **annual
+means** and emits a flat 4.5 MB Int16 binary (~1.5 MB gzipped) plus a JSON
+sidecar.
 
 ```bash
-npm run data     # scarica, decomprime in streaming, ricampiona
+npm run data     # download, stream-decompress, resample
 ```
 
-Lo script include un lettore NetCDF-3 minimale (~90 righe, zero dipendenze):
-il formato classic è abbastanza semplice da non giustificare una libreria, e
-il download passa per `zlib` in streaming così i 57 MB non stanno mai due volte
-in memoria.
+The script includes a minimal NetCDF-3 reader (~90 lines, zero dependencies):
+the classic format is simple enough not to justify a library, and the download
+runs through `zlib` as a stream so the 57 MB never sit in memory twice.
 
-Regole di qualità applicate in fase di build:
+Quality rules applied at build time:
 
-- una cella entra nella media annuale solo con **≥ 8 mesi** validi;
-- un anno viene pubblicato solo con **≥ 25%** di copertura globale;
-- gli anni parziali in coda vengono scartati (la sorgente si aggiorna a metà anno);
-- la media globale è **pesata per area** (`cos(lat)`), non una media aritmetica di celle.
+- a cell only enters the annual mean with **≥ 8** valid months;
+- a year is only published with **≥ 25%** global coverage;
+- trailing partial years are dropped (the source updates mid-year);
+- the global mean is **area-weighted** (`cos(lat)`), not an arithmetic mean of cells.
 
-### Il rendering
+### The rendering
 
-La griglia è equirettangolare, la mappa è Web Mercator. Sovrapporre l'una all'altra
-senza riproiettare è l'errore classico: le alte latitudini scivolano.
+The grid is equirectangular, the map is Web Mercator. Overlaying one on the
+other without reprojecting is the classic mistake: the high latitudes slide.
 
-`src/lib/gridRenderer.ts` campiona **in spazio Mercatore**, riga per riga, con
-interpolazione bilineare consapevole dei valori mancanti (le celle vuote non
-inquinano i vicini, e la loro copertura parziale sfuma l'alfa ai bordi invece di
-produrre un gradino). Le tabelle riga/colonna sono precalcolate una volta sola
-perché il loop interno gira ~1M di volte per frame.
+`src/lib/gridRenderer.ts` samples **in Mercator space**, row by row, with
+bilinear interpolation that is aware of missing values (empty cells do not
+contaminate their neighbours, and their partial coverage fades the alpha at the
+edges instead of producing a step). Row and column tables are precomputed once,
+because the inner loop runs about a million times per frame.
 
-Il canvas risultante viene drappeggiato su MapLibre come `canvas` source. La
-sorgente si riattiva per un solo frame dopo ogni ridisegno, invece di lasciare la
-mappa in un render loop continuo.
+The resulting canvas is draped over MapLibre as a `canvas` source. The source
+wakes up for a single frame after each repaint instead of leaving the map in a
+continuous render loop.
 
-## Chi scalda il pianeta
+## Who's heating the planet
 
-La mappa mostra l'effetto, i settori mostrano la causa: la ripartizione delle
-emissioni globali di gas serra — Climate Watch (WRI), 2016, 49,4 Gt CO₂e —
-navigabile dai quattro macro-settori giù fino al singolo sotto-settore.
+The map shows the effect; the sectors show the cause: the breakdown of global
+greenhouse gas emissions — Climate Watch (WRI), 2016, 49.4 Gt CO₂e — navigable
+from four macro-sectors down to a single sub-sector.
 
-Si apre dalla **barra in cima** e occupa tutta la finestra, con il totale e la
-sua ripartizione in un rail fisso a sinistra e l'albero a destra. Erano 24 voci
-su tre livelli più sei schede con le fonti: in una colonna da 26rem si leggevano
-attraverso una feritoia. A schermo intero le barre hanno la lunghezza che serve
-per confrontarle, e `esc` chiude.
+It opens from the **top bar** and fills the window, with the total and its
+breakdown in a fixed rail on the left and the tree on the right. It was 24 items
+across three levels plus six source cards: in a 26rem column you read them
+through a letterbox. Full screen, the bars have the length they need to be
+compared, and `esc` closes.
 
-Due scelte non ovvie.
+Two non-obvious choices.
 
-**Una sola scala, una sola origine.** Ogni barra è la quota sul totale mondiale,
-non sul genitore, e riparte dal bordo del pannello annullando il rientro della
-gerarchia (`marginLeft: -depth * INDENT`, più la stessa quantità in `width`).
-Senza la compensazione una percentuale identica disegnerebbe una barra più corta
-a ogni livello, perché il `%` si risolve sulla riga rientrata: *Ferro e acciaio*
-al 7,2% sembrerebbe più piccolo di quel che è solo perché sta due livelli sotto.
+**One scale, one origin.** Every bar is the share of the world total, not of its
+parent, and it restarts from the panel edge by cancelling the hierarchy indent
+(`marginLeft: -depth * INDENT`, plus the same amount in `width`). Without that
+compensation an identical percentage would draw a shorter bar at every level,
+because `%` resolves against the indented row: *Iron and steel* at 7.2% would
+look smaller than it is purely for sitting two levels down.
 
-**Le quote sommano al genitore, e viene verificato.** In dev un controllo
-ricorsivo confronta la somma dei figli con il valore del padre e il primo livello
-con 100: una cifra corretta a mano senza aggiornare il resto si fa notare subito,
-invece di restare un errore silenzioso in una tabella che nessuno ricontrolla.
+**The shares add up to their parent, and it is verified.** In dev a recursive
+check compares the sum of the children against the parent, and the first level
+against 100: a figure corrected by hand without updating the rest gets noticed
+immediately, instead of staying a silent error in a table nobody re-checks.
 
-L'anno è dichiarato invece che sottinteso. Il 2016 è l'ultimo pubblicato con
-questo dettaglio per sotto-settore; le quote si muovono lentamente, il totale
-assoluto no.
+The year is declared rather than implied. 2016 is the last one published at this
+sub-sector detail; the shares move slowly, the absolute total does not.
 
-### La seconda lente: a cosa servono
+### Second lens: what it was for
 
-«L'abbigliamento non c'è» è l'obiezione giusta, e la risposta non è aggiungere
-una riga. Quel taglio è **per sorgente** — dove il gas esce fisicamente — e
-l'abbigliamento è un **uso finale**: le sue emissioni sono già dentro, spalmate
-tra petrolchimica (fibre sintetiche), altra industria (tintura e finissaggio),
-agricoltura (cotone e lana), navigazione e discariche. Aggiungerla accanto a
-«Energia 73,2%» la conterebbe due volte, e il controllo di somma se ne
-accorgerebbe subito.
+"Clothing isn't in there" is the right objection, and the answer is not to add a
+row. That cut is **by source** — where the gas physically comes out — and
+clothing is an **end use**: its emissions are already inside, spread across
+petrochemicals (synthetic fibres), other industry (dyeing and finishing),
+agriculture (cotton and wool), shipping and landfills. Adding it next to "Energy
+73.2%" would count it twice, and the sum check would say so immediately.
 
-Quindi: una seconda scheda, la stessa torta tagliata per uso finale — edifici,
-cibo, turismo, sanità, abbigliamento, digitale. Ha tre proprietà che la prima
-non ha, tutte dichiarate invece che nascoste:
+So: a second tab, the same pie cut by end use — buildings, food, tourism,
+health, clothing, digital. It has three properties the first one does not, all
+declared rather than hidden:
 
-- **le voci si sovrappongono** e non sommano a 100 (un volo per una vacanza sta
-  sia in *turismo* sia in *trasporti*);
-- **ogni voce ha la sua fonte, il suo anno e i suoi confini** — non esiste uno
-  studio unico che le calcoli tutte allo stesso modo, quindi la fonte sta sulla
-  riga, non nel footer, e il denominatore diverso è segnalato in giallo;
-- **dove la stima è contesa si disegna l'intervallo.** L'abbigliamento sta tra
-  il 2 e il 4%: il «10% delle emissioni globali» che gira ovunque non ha una
-  fonte rintracciabile. La barra è piena fino alla stima minima e velata fino
-  alla massima — la parte velata è l'incertezza, non un valore in più.
+- **the items overlap** and do not add to 100 (a holiday flight sits in both
+  *tourism* and *transport*);
+- **each item has its own source, year and boundaries** — no single study
+  computes them all the same way, so the source sits on the row, not in the
+  footer, and a different denominator is flagged in amber;
+- **where the estimate is contested, the range is drawn.** Clothing sits between
+  2 and 4%: the "10% of global emissions" that circulates everywhere has no
+  traceable source. The bar is solid up to the low estimate and veiled up to the
+  high one — the veiled part is the uncertainty, not an extra value.
 
-Ogni voce ha un rimando *dove sono già contate*, che apre l'altra lente sui
-settori corrispondenti e mette in secondo piano il resto. È lì che si vede la
-differenza tra le due domande.
+Every item has a *where they are already counted* link, which opens the other
+lens on the matching sectors and pushes the rest into the background. That is
+where the difference between the two questions becomes visible.
 
-## Chi lo causa (il layer per paese)
+### Third lens: who extracts it
 
-La mappa delle anomalie mostra chi il riscaldamento lo **subisce**. Il selettore
-in basso a sinistra la ribalta: le emissioni per paese, cioè chi lo **causa**.
-Che le due mappe non si somiglino affatto è l'argomento più forte che questa app
-può fare.
+Upstream accounting. [Carbon Majors](https://carbonmajors.org/briefing/Carbon-Majors-2024-Data-Update-35466)
+traces **34.7 Gt CO₂e in 2024 to 166 entities**, and 70% of all fossil CO₂ of
+the industrial era to 178. It takes 32 companies to pass half of world
+emissions.
 
-Tre metriche, ognuna con la sua domanda:
+It is not double counting the other two tabs: the CO₂ from oil is emitted by
+whoever burns it, this lens says who extracted it — the same quantity seen from
+the other end of the chain.
+
+In the same tab, **who packages it**: the brands found in waste collected by the
+volunteers of the [Global Brand Audit](https://www.breakfreefromplastic.org/2024/02/07/bffp-movement-unveils-2023-global-brand-audit-results/)
+— 8,804 volunteers in 41 countries, 537,719 items counted. It is the other face
+of the "mismanaged plastic" metric on the map: countries there, companies here.
+And the ranking is **not by number of items** but by how many different countries
+find that brand: in 2023 the runner-up left more of them, but across 30 countries
+against 40. Counting items would reward the places that collect better, not the
+most widespread brands — and since that difference is not obvious, the panel
+writes it down.
+
+**These are the only figures in the project copied by hand.** The Carbon Majors
+CSV is free but sits behind an interactive download a script cannot walk through
+(I tried: it returns the HTML page), and brand audits only come out as annual
+PDFs. So no pipeline pretending to update itself: the press-release numbers, with
+year and link beside each, and a panel that says they are transcribed.
+
+## Who causes it (the country layer)
+
+The anomaly map shows who **suffers** the warming. The selector at the bottom
+left flips it: emissions per country, i.e. who **causes** it. That the two maps
+look nothing alike is the strongest argument this app can make.
+
+Three metrics, each with its own question:
 
 | | |
 |---|---|
-| **Pro capite** | quanto pesa una persona di qui, uso del suolo incluso |
-| **Storiche** | quota di tutta la CO₂ emessa dal 1750 — quella che è ancora lassù |
-| **Import/export** | consumi meno produzione: chi compra una maglietta fatta altrove ne compra anche le emissioni |
+| **Per capita** | how much one person here accounts for, land use included |
+| **Historical** | share of all CO₂ emitted since 1750 — the part still up there |
+| **Imports/exports** | consumption minus production: buying a T-shirt made elsewhere means buying its emissions |
 
-Le prime due sono **quantità** e prendono una rampa sequenziale rossa a tinta
-unica, **dal chiaro allo scuro**: più scuro = più emissioni, la convenzione che
-chiunque abbia visto una mappa si aspetta. La terza ha due versi opposti attorno
-allo zero ed è l'unica **divergente**, rosso↔verde-azzurro; lì "peggio" non
-esiste, esiste "più lontano da zero", e vale la stessa regola su entrambe le
-braccia, con il grigio del centro che arretra perché *in pari* non è una notizia.
-Il rosso sta dalla parte di chi importa: è il paese la cui impronta vera è più
-grande del suo numero territoriale.
+The first two are **quantities** and take a single-hue red sequential ramp,
+**light to dark**: darker = more emissions, the convention anyone who has seen a
+map expects. The third has two opposite directions around zero and is the only
+**diverging** one, red↔teal; there "worse" does not exist, "further from zero"
+does, and the same rule holds on both arms, with the grey middle receding
+because *balanced* is not news. Red sits on the importer side: that is the
+country whose real footprint is bigger than its territorial number.
 
-Su una basemap scura la convenzione ha un costo — il valore alto è anche il meno
-luminoso. Due cose lo pagano: il passo più scuro si ferma dove il contrasto sul
-fondo regge ancora (2,3:1, misurato) e ogni paese ha il suo contorno chiaro, così
-un riempimento scuro legge come pieno e non come buco. L'alfa resta **costante**
-su tutte le classi: farla crescere col valore, come fa la rampa delle anomalie,
-annullerebbe esattamente la rampa di luminosità che qui porta l'informazione.
+On a dark basemap the convention has a cost — the high value is also the least
+luminous. Two things pay for it: the darkest step stops where contrast against
+the background still holds (2.3:1, measured) and every country has its own light
+outline, so a dark fill reads as filled and not as a hole. Alpha stays
+**constant** across classes: growing it with the value, the way the anomaly ramp
+does, would cancel exactly the lightness ramp that carries the information here.
 
-Le rampe sono validate sulla basemap vera, non a occhio: monotonia di luminosità,
-distacco fra classi adiacenti, contrasto sul fondo, separazione per daltonismo.
+The ramps are validated against the real basemap, not by eye: lightness
+monotonicity, separation between adjacent classes, contrast on the background,
+colour-blind separation.
 
-`scripts/build-emissions-data.mjs` unisce i dati Global Carbon Budget (via Our
-World in Data, CSV da 14 MB) alle forme Natural Earth 1:110m e ne fa un GeoJSON
-da 210 KB per paese. Il file si scarica **su richiesta**: quando si accende il
-layer, o quando si apre il pannello di un luogo — che dalle stesse forme ricava
-a quale paese attribuire il punto, e le usa come maschera terra/mare. Chi guarda
-solo la mappa delle anomalie non lo scarica.
+`scripts/build-emissions-data.mjs` joins Global Carbon Budget data (via Our World
+in Data, a 14 MB CSV) to Natural Earth 1:110m shapes and makes a 210 KB
+per-country GeoJSON. The file downloads **on demand**: when the layer is switched
+on, or when a location panel opens — which uses the same shapes to decide which
+country a point belongs to, and as a land/sea mask. Whoever only looks at the
+anomaly map never downloads it.
 
-Dentro ci sono tre proprietà per colorare la mappa (`pc`, `cum`, `net`) e una
-decina che servono a rispondere **perché** quel colore è quel colore, nel
-pannello di un luogo: la ripartizione per combustibile, l'energia consumata a
-testa, i gas diversi dalla CO₂ e i gradi di riscaldamento attribuibili al paese.
-Ogni gruppo di numeri che viene letto insieme arriva **dalla stessa riga** del
-CSV: la ripartizione deve sommare al totale di cui è ripartizione, e l'energia
-deve dividere le emissioni del suo stesso anno, o l'intensità che ne esce è
-inventata.
+Two things the join carries with it:
 
-Due dettagli che il join si porta dietro:
+- `Number('')` is `0`, not `NaN`. Without an explicit check every empty CSV cell
+  would have become a confident zero: Taiwan and Antarctica as countries with no
+  emissions. Now an empty cell stays "no data" and the country is drawn grey.
+- Every metric takes **its own reference year**, and whoever lacks it is not
+  coloured. Keeping one country's 2019 next to everyone else's 2024 would produce
+  a map whose colours cannot be compared to each other — which is the only thing
+  a choropleth is for.
 
-- `Number('')` è `0`, non `NaN`. Senza un controllo esplicito ogni cella vuota
-  del CSV sarebbe diventata uno zero convinto: Taiwan e l'Antartide come paesi a
-  emissioni nulle. Adesso una cella vuota resta «nessun dato» e il paese si
-  disegna grigio.
-- Ogni metrica prende **il suo anno di riferimento**, e chi non ce l'ha non
-  viene colorato. Tenere il dato 2019 di un paese accanto al 2024 di tutti gli
-  altri produrrebbe una mappa i cui colori non si possono confrontare fra loro —
-  che è l'unica cosa per cui esiste una mappa coropletica.
+## Beyond CO₂
 
-## Perché qui si scalda così
+CO₂ warms, but you do not breathe it — and it is not what kills right now. Three
+sections carry the pollution that is not carbon.
 
-Il pannello di un luogo diceva **quanto**. Adesso dice anche **perché proprio
-tanto**, e lo dice con numeri misurati invece che con una frase scritta a mano
-posto per posto.
+### The air here (in the location panel)
 
-È una scala di confronti annidati, tutti letti dalla stessa griglia GISTEMP:
+PM2.5 for the open point, from **Open-Meteo Air Quality**: the same keyless
+provider as the ERA5 archive, with the CAMS model behind it. A single request
+(~32 KB gzipped) brings both the current value and the last complete calendar
+year.
+
+The big number is not the absolute value but the **ratio to the WHO guideline** —
+5 µg/m³ as an annual mean — because "2.4 times the threshold" lands without
+knowing what a microgram per cubic metre is. Below it, the days above the daily
+guideline (15 µg/m³). Rome: 12.2 µg/m³, 94 days out of 365. Delhi: 80.3 µg/m³,
+**365 days out of 365**. Reykjavík: 3.1, zero days.
+
+Two rules keep the count honest, the same ones as the days above 30 °C: a day
+only counts with at least 18 measured hours, and a year only with at least 300
+days. And the daily threshold applies to the **daily mean**, not to peaks:
+counting hours would give a bigger number that means nothing.
+
+The hook into the rest of the app was already there: the country panel explains
+that attributed warming exceeds observed warming *because aerosols mask part of
+it*. Those aerosols are this PM2.5. The same smoke keeps the planet slightly
+cooler and fills people's lungs — the app was writing half the sentence.
+
+### Five more metrics on the map
+
+A third tab in the selector, next to "who suffers it" and "who causes it":
+
+| | |
+|---|---|
+| **Air (PM2.5)** | population-weighted mean exposure, µg/m³ |
+| **Deaths** | deaths attributable to air pollution, per 100,000 |
+| **Water** | withdrawals as a share of renewable resources, % |
+| **Plastic** | mismanaged plastic waste per capita, kg/year |
+| **Nitrogen** | nitrogen fertiliser per hectare of cropland, kg/ha |
+
+A separate tab rather than five more chips at the end of the carbon one: PM2.5
+is not a kind of CO₂, and next to "per capita" it would have read as a variant of
+the same count.
+
+**The classes are not round numbers.** Where an agreed threshold exists, that is
+the boundary: PM2.5 uses the WHO 2021 guideline and its four interim targets (5,
+10, 15, 25, 35), water stress uses the UN target 6.4.2 classes — and above 100% a
+country withdraws more than renews, which happens to seventeen of them. Inventing
+a scale would have made the colours arbitrary exactly where an international
+agreement on where the limit sits already exists.
+
+`scripts/build-pollution-data.mjs` joins the **World Bank** API (which
+redistributes WHO and FAO) and two **Our World in Data** datasets into a 16 KB
+per-ISO3 table **without geometry**: the emissions file already has the shapes,
+and the client merges the two on the fly. The usual rule holds — one reference
+year per metric, and whoever lacks it stays grey — with one difference: the year
+picked is the one that **covers the most countries**, not the most recent, because
+the latest published year is almost always half empty.
+
+A trap found along the way: World Bank aggregates (`WLD`, `EUU`, `ARB`) have
+legitimate-looking ISO3 codes and pass any format check. The indicator endpoint
+does not say which is which — the `region` field comes back `null` for everyone —
+so the list of real countries has to be asked of `/country`, where an aggregate
+has `region.id === 'NA'`. Without it, the entire world ended up in the ranking as
+if it were a country.
+
+### The planet's boundaries
+
+The section that puts climate back in scale. Nine limits, **seven crossed**:
+climate is one of the nine and fifth by distance from its limit. Nitrogen and
+phosphorus sit at three times the boundary, biosphere integrity at more than ten.
+
+The bars measure **how many times the limit**, not the absolute value: ppm,
+teragrammes of nitrogen and Dobson units would not sit on one scale any other
+way. Half the track is the boundary; the real number stays written beside each
+row. Two rows have the direction inverted — forest remaining and aragonite
+saturation are crossed by **falling** — and without declaring that in the data
+they would have had their bar on the wrong side.
+
+Values from Richardson et al., *Science Advances* 2023: one assessment,
+internally consistent, instead of nine numbers from nine places. The status is
+from the **Planetary Health Check 2025**, which declared ocean acidification
+crossed as well — the seventh. It is the only row where the two sources overlap,
+and it carries the 2025 numbers: declared, rather than blended in silence.
+
+And ozone, within its limit and recovering, sits there as a reminder that a
+global environmental problem was closed once.
+
+## Who can afford to cope
+
+The map already answers "who suffers it" and "who causes it". This is the third
+question, and it is the one that closes the argument: between those hit hardest
+and those with the means to adapt there is almost no overlap.
+
+Three metrics from the **ND-GAIN Country Index**: the overall index, the
+**vulnerability** half (exposure, sensitivity, adaptive capacity) and the
+**readiness** half (economic conditions, governance, social cohesion).
+
+Watch the **direction**: the index and readiness are "higher is better",
+vulnerability is "higher is worse". The project's red ramp says "darker is
+worse", so two of the three have their classes reversed — declared in the code,
+not left to chance, because a map with the wrong direction lies without anybody
+noticing.
+
+The archive is a 4.9 MB zip with 217 CSVs that only downloads if you present a
+`Referer` — without one the server answers 403. Three files are needed, so
+`scripts/build-adaptation-data.mjs` carries a minimal zip reader (~70 lines, zero
+dependencies) in the same spirit as the NetCDF-3 reader in the climate script:
+the format is simple enough not to justify a library.
+
+## Why it warms this much here
+
+The location panel used to say **how much**. Now it also says **why this much**,
+with measured numbers instead of a sentence written by hand place by place.
+
+It is a ladder of nested comparisons, all read from the same GISTEMP grid:
 
 | | | |
 |---|---|---|
-| Il mondo | +1,29 °C | |
-| Fascia 40°–50° N | +1,82 °C | +0,53 |
-| La terra di questa fascia | +2,33 °C | +0,50 |
-| Questo punto | +2,64 °C | +0,31 |
+| The world | +1.29 °C | |
+| The 40°–50° N band | +1.82 °C | +0.53 |
+| Land within that band | +2.33 °C | +0.50 |
+| This point | +2.64 °C | +0.31 |
 
-Ogni riga è la media — pesata per `cos(lat)`, che a 60° una cella copre metà
-della superficie di una all'equatore — di un insieme più stretto di quello sopra.
-Lo scarto fra due righe è **quanto pesa quel passaggio**, non una causa isolata
-dalle altre: a queste scale non esistono cause indipendenti, e la nota sotto la
-scala lo scrive. Accanto a ogni riga c'è il meccanismo: l'amplificazione polare
-dove il ghiaccio che si ritira scopre roccia e mare scuri, la capacità termica
-dell'acqua dove il punto cade in mare, la continentalità dove intorno c'è solo
-terra.
+Each row is the mean — weighted by `cos(lat)`, since at 60° a cell covers half
+the surface of one at the equator — of a narrower set than the row above. The gap
+between two rows is **how much that step weighs**, not a cause isolated from the
+others: at these scales independent causes do not exist, and the note under the
+ladder says so. Beside each row is the mechanism: polar amplification where
+retreating ice uncovers dark rock and sea, the thermal capacity of water where
+the point falls at sea, continentality where there is only land around.
 
-Tre regole tengono onesta la scala.
+Three rules keep the ladder honest.
 
-**Il testo non contraddice mai il numero.** La continentalità spiega il residuo
-solo se il residuo ha il verso giusto. A Delhi il punto sta *sotto* la media
-della terraferma della sua fascia — foschia industriale, irrigazione — e lì
-«lontano dal mare ci si scalda di più» sarebbe una frase sbagliata detta con
-sicurezza. Quando il verso non torna, la riga dice che quello che resta non si
-legge da qui, ed elenca cosa una cella di 2° non separa.
+**The text never contradicts the number.** Continentality explains the residual
+only if the residual has the right sign. In Delhi the point sits *below* the land
+mean of its band — industrial haze, irrigation — and "further from the sea means
+more warming" would be a wrong sentence said with confidence. When the sign does
+not work out, the row says the remainder cannot be read from here, and lists what
+a 2° cell does not separate.
 
-**Una riga che non si può misurare non si stampa.** La fascia 70°–80° S ha dati
-ottocenteschi sul 2% delle sue celle: sotto il 60% di copertura la media della
-fascia sparisce, e al suo posto compare il motivo per cui non c'è.
+**A row that cannot be measured is not printed.** The 70°–80° S band has
+nineteenth-century data on 2% of its cells: below 60% coverage the band mean
+disappears, and the reason it is missing takes its place.
 
-**Terra e mare li decide il centro della cella**, e quando il punto e la sua cella
-non sono d'accordo la spiegazione è quella, prima di ogni altra: nel golfo di
-Napoli il punto è in mare, ma la cella che lo misura è per il 56% terraferma, e
-il valore che ne esce sta dalla parte della terra.
+**Land and sea are decided by the cell centre**, and when the point and its cell
+disagree that is the explanation before any other: in the gulf of Naples the
+point is at sea, but the cell measuring it is 56% land, and the value that comes
+out sits on the land side.
 
-## Quanta CO₂ causa questa zona
+## How much CO₂ this area causes
 
-La mappa delle anomalie risponde a «chi lo subisce», il layer per paese a «chi lo
-causa», e le due risposte stavano in due schermate diverse. Ora il pannello di un
-luogo le tiene insieme sullo stesso punto.
+The anomaly map answers "who suffers it", the country layer "who causes it", and
+the two answers used to live on two different screens. Now the location panel
+holds them together on the same point.
 
-Il numero grosso è **quanti gradi del riscaldamento globale sono attribuibili ai
-gas serra emessi in quel paese** dal 1851 — Italia +0,015 °C, Brasile +0,088,
-Stati Uniti +0,296 — accanto alla quota di popolazione, che è il metro con cui va
-letto: il Brasile ha il 5,3% del riscaldamento attribuito e il 2,6% delle persone.
+The big number is **how many degrees of global warming are attributable to the
+greenhouse gases emitted by that country** since 1851 — Italy +0.015 °C, Brazil
++0.088, United States +0.296 — next to the population share, which is the
+yardstick it should be read against: Brazil has 5.3% of attributed warming and
+2.6% of the people.
 
-E soprattutto: **quel contributo scalda il mondo intero, non chi lo emette.** La
-CO₂ si mescola in atmosfera in pochi mesi. Questo punto ha subito +2,64 °C, quasi
-tutti causati da altri — che è la tesi dell'app detta su un punto solo invece che
-su due mappe.
+And above all: **that contribution warms the whole world, not whoever emits it.**
+CO₂ mixes through the atmosphere in months. This point has taken +2.64 °C, almost
+all of it caused by others — which is the app's thesis said on a single point
+instead of across two maps.
 
-Il totale mondiale di questa attribuzione (+1,68 °C) è più alto del riscaldamento
-osservato (+1,29 °C), e il pannello dice perché invece di lasciar sospettare un
-errore: conta il solo effetto serra, senza il raffreddamento degli aerosol che ne
-maschera una parte.
+The world total of this attribution (+1.68 °C) is higher than observed warming
+(+1.29 °C), and the panel says why instead of leaving an error to be suspected:
+it counts the greenhouse effect alone, without the aerosol cooling that masks
+part of it.
 
-### Il perché delle emissioni
+### Why the emissions
 
-Tre pezzi, in ordine di quanto spiegano.
+Three pieces, in order of how much they explain.
 
-**Da dove esce.** La ripartizione per sorgente dell'anno: carbone, petrolio, gas,
-cemento, gas bruciato ai pozzi, foreste e uso del suolo. È la prima cosa perché
-in mezzo mondo è già la risposta: in Brasile il 77% non esce da un motore ma da
-una foresta tagliata, in Qatar l'82% è gas. Le quote sono sul totale ricostruito
-dalle sue parti — non su quello pubblicato, che l'arrotondamento del file rende
-diverso fino al 2% sui paesi da mezza megatonnellata: una torta le cui fette non
-fanno cento è una torta sbagliata. Dove l'uso del suolo è un **pozzo** invece che
-una sorgente non diventa una fetta negativa: esce dalla torta e viene detto a
-parte.
+**Where it comes out.** The year's breakdown by source: coal, oil, gas, cement,
+flared gas, forests and land use. It comes first because in half the world it is
+already the answer: in Brazil 77% does not come out of an engine but out of a
+felled forest, in Qatar 82% is gas. Shares are computed against the total
+reconstructed from its parts — not the published one, which file rounding makes
+different by up to 2% for countries emitting half a megatonne: a pie whose slices
+do not make a hundred is a broken pie. Where land use is a **sink** rather than a
+source it does not become a negative slice: it leaves the pie and is stated
+separately.
 
-**Perché proprio tanto.** L'identità che sta sotto quasi tutta la differenza fra
-un paese e l'altro:
+**Why this much.** The identity underneath almost all of the difference between
+one country and another:
 
 ```
-CO₂ a testa  =  energia a testa  ×  CO₂ per unità di energia
+CO₂ per person  =  energy per person  ×  CO₂ per unit of energy
 ```
 
-cioè *quanta* energia consuma una persona di qui e *quanto è sporca*. Sono due
-leve diverse e si tirano in modi diversi, e un solo numero pro capite le
-appiattisce in una: la Norvegia sta 4,6× la media mondiale sulla prima e 0,31×
-sulla seconda; il Qatar sta sopra su tutte e due (9,9× e 0,88×); l'India sta
-sotto sull'energia (0,36×) e sopra sull'intensità (1,3×). I due rapporti sono
-scritti accanto ai valori assoluti e **si moltiplicano nel terzo**, che è quello
-che li rende leggibili invece che due numeri in fila.
+that is, *how much* energy a person here consumes and *how dirty* it is. Two
+different levers, pulled in different ways, and a single per-capita number
+flattens them into one: Norway sits at 4.6× the world average on the first and
+0.31× on the second; Qatar is above on both (9.9× and 0.88×); India is below on
+energy (0.36×) and above on intensity (1.3×). The two ratios are written beside
+the absolute values and **multiply into the third**, which is what makes them
+readable instead of two numbers in a row.
 
-**E non è tutta CO₂.** La quota di metano e protossido d'azoto sul totale dei gas
-serra del paese, quando supera il 5%: in Kenya è tre quarti, e senza quella riga
-il paese sembrerebbe non emettere niente.
+**And it is not all CO₂.** The share of methane and nitrous oxide in the
+country's greenhouse gas total, when it exceeds 5%: in Kenya it is three
+quarters, and without that line the country would look like it emits nothing.
 
-Un dettaglio che il calcolo si porta dietro: la CO₂ fossile e l'uso del suolo
-arrivano dal Global Carbon Budget, il totale dei gas serra da Climate Watch, che
-stima l'uso del suolo in un altro modo. Sottrarre l'uno dall'altro darebbe numeri
-che non tornano — per il Congo un totale più piccolo della somma delle sue parti
-— quindi la quota non-CO₂ si calcola **solo con i termini che vengono dalla
-stessa fonte**.
+One detail the calculation carries: fossil CO₂ and land use come from the Global
+Carbon Budget, the greenhouse gas total from Climate Watch, which estimates land
+use differently. Subtracting one from the other would give numbers that do not
+add up — for Congo, a total smaller than the sum of its parts — so the non-CO₂
+share is computed **only from terms that come from the same source**.
 
-### A chi appartiene un punto
+### Which country a point belongs to
 
-Le emissioni si contano per paese: più fine di così non esiste, e il pannello lo
-dichiara invece di far credere che quei numeri siano del chilometro quadrato che
-è stato cliccato. L'attribuzione ha quattro esiti, tutti scritti sull'etichetta:
+Emissions are counted per country: finer than that does not exist, and the panel
+declares it rather than implying those numbers belong to the square kilometre
+that was clicked. Attribution has four outcomes, all written on the badge:
 
 | | |
 |---|---|
-| **paese del luogo cercato** | il codice ISO arriva dal geocoder: è esatto, e non soffre della semplificazione dei confini |
-| **punto dentro il confine** | point-in-polygon sulle forme 1:110m, per i punti cliccati sulla mappa |
-| **costa più vicina · N km** | il punto è in mare entro 300 km: a quella distanza il paese più vicino è la risposta meno sbagliata, e il numero di chilometri è lì per giudicarlo |
-| **nessuno** | mare aperto oltre i 300 km, o Antartide: non c'è un paese, e la cosa da dire è quella |
+| **country of the searched place** | the ISO code comes from the geocoder: exact, and immune to border simplification |
+| **point inside the border** | point-in-polygon on the 1:110m shapes, for points clicked on the map |
+| **nearest coast · N km** | the point is at sea within 300 km: at that distance the nearest country is the least wrong answer, and the kilometre count is there to judge it |
+| **none** | open sea beyond 300 km, or Antarctica: there is no country, and that is the thing to say |
 
-Il quinto caso è quello che rende utile il codice ISO: Singapore, Malta, Monaco e
-gli altri micro-stati non hanno una forma a 1:110m, e le loro coordinate cadono
-dentro il vicino. Lì il pannello dice che quel paese in questo file non c'è —
-mostrare i numeri della Malaysia sotto il nome «Singapore» sarebbe la risposta
-sbagliata detta con sicurezza.
+The fifth case is what makes the ISO code useful: Singapore, Malta, Monaco and
+the other micro-states have no shape at 1:110m, and their coordinates fall inside
+a neighbour. There the panel says that country is not in this file — showing
+Malaysia's numbers under the name "Singapore" would be the wrong answer said with
+confidence.
 
-## Ricerca progetti (opzionale)
+## Days you can feel
 
-Il pannello di un luogo può cercare sul web progetti ambientali a cui
-partecipare, tramite **OpenRouter** con il plugin di ricerca web.
+`+1.8 °C` is an abstraction. "38 nights above 20 degrees instead of 4" is not.
 
-**Ogni URL viene verificato contro i risultati di ricerca reali.** Un modello
-può scrivere l'URL plausibile di una pulizia spiaggia che non esiste; non può
-farlo comparire tra le citazioni. `discoverProjects.ts` legge gli URL dalle
-annotazioni `url_citation` della risposta e scarta tutto ciò che non combacia,
-riportando quanti ne ha scartati. Il pannello distingue *pagina trovata* (URL
-esatto tra le citazioni) da *solo dominio* (il sito dell'organizzazione è reale,
-la pagina specifica no).
+The location panel counts, on the daily ERA5 series, the days above 30 °C, the
+nights above 20 and the frost days, averaged over the same two thirty-year
+windows as the absolute temperatures. Maxima and minima triple the JSON but not
+the bandwidth — about 190 KB gzipped for 86 years, because a column of similar
+numbers compresses well.
 
-Config allineata a `startup-buddy`: routing EU di default
-(`eu.openrouter.ai` + `data_collection: "deny"`, `zdr: true`), plugin `web` con
-`max_results` esplicito invece del suffisso `:online`, e `response-healing`.
+Two rules keep the count honest:
 
-`provider.require_parameters: true` non è un dettaglio: senza, il router può
-scegliere un endpoint che ignora `response_format` e lo schema JSON decade
-silenziosamente a suggerimento.
+- a year with gaps would count fewer days over threshold **just because it has
+  fewer days in total**, so below the completeness threshold it enters no average;
+- a row only appears if it means something in that place. Frost days in Singapore
+  and 30 °C days in Tromsø would be two rows of zeros, and a zero that does not
+  change says nothing.
 
-È la differenza tra "un'AI dice che c'è una pulizia" e "esiste una pagina che
-dice che c'è una pulizia". La seconda è ancora da verificare — l'interfaccia lo
-dichiara invece di nasconderlo.
+The colour of the delta follows **the direction of warming, not the sign of the
+number**: more tropical nights and fewer frosts say the same thing.
 
-Controllo dei costi: la ricerca parte **solo su click**, i risultati sono in
-cache per cella geografica da 0,5° (6 ore), e l'endpoint ha un tetto per IP e
-uno globale giornaliero.
+## Since you have been here
+
+Type a year of birth in the location panel and the same series that draws the
+chart is re-read from a different origin: how much **that point** warmed since
+then, and how many of the ten hottest years ever measured there fall inside one
+lifetime.
+
+Zero extra requests — it is the grid cell already loaded. The comparison is
+between the **decade around** the birth year and the most recent decade, not two
+single years: one year on its own is weather noise and the comparison would be
+with chance. The year lives in `localStorage` and never enters the URL: it is the
+only personal datum the app touches, and a shared link should not carry it.
+
+## What can I do
+
+The contrast that holds the section up, from [Wynes & Nicholas 2017](https://iopscience.iop.org/article/10.1088/1748-9326/aa7541):
+living car-free is worth **2.4 t/year**, changing lightbulbs **0.10**. The two
+actions every campaign mentions are at the bottom, and in the panel they are
+tagged "recommended" precisely to make the gap visible between what we are told
+to do and what weighs.
+
+The bars are not scaled against each other: the track is as long as **one average
+person in the world** (5.29 t, from the app's own world reference), with a mark
+at the share compatible with 1.5 °C. So you can see at a glance that not even the
+biggest single choice covers half of what an average person emits — and that
+living car-free saves more than a whole fair annual share.
+
+**One item is excluded on purpose.** The same study puts "one fewer child" at the
+top with 58.6 t/year: it is the most contested figure in the work, because it
+assigns the parent a share of the future emissions of all descendants under a
+convention that applies to nothing else here. The panel says it exists and why it
+is missing, instead of removing it quietly.
+
+### What is on the plate
+
+The "plant-based diet" row is worth 0.8 t a year, and the app never opened the
+box. Now it does: kilograms of CO₂e per kilogram of product, stacked by supply
+chain stage. Beef ~99 against nuts ~0.4 — two orders of magnitude inside the same
+shopping basket.
+
+And the stage breakdown does something on its own: **transport is a median 2.8%
+of the total**. It is the number that dismantles "eat local" — changing *what* you
+eat weighs far more than changing *where it came from*. Not by saying so, by
+showing it.
+
+### How much time is left
+
+Next to the levers and never on its own — a countdown without a lever beside it
+produces fatalism, which is the opposite of what that screen is trying to do.
+
+The budget comes from [Indicators of Global Climate Change 2024](https://essd.copernicus.org/articles/17/2641/2025/)
+(130 Gt CO₂ from the start of 2025, 50% probability of staying under 1.5 °C); the
+**burn rate does not**: it is the 43.2 Gt that come out of `co2-countries.json`'s
+world reference, fossil plus land use. The two figures stay consistent with each
+other and the arithmetic can be redone by hand.
+
+The number shown is **already net of what has been emitted since 2025** — and the
+caption says so, because "130 Gt left from the start of 2025" next to "1.4 years"
+looks like a contradiction rather than a subtraction.
+
+### Almost everyone agrees, and almost nobody knows it
+
+Across 130,000 people in 125 countries ([Andre et al., *Nature Climate Change* 2024](https://www.uni-bonn.de/en/news/weltweite-befragung-zeigt-breite-mehrheit-der-weltbevoelkerung-fuer-den-klimaschutz)):
+69% are willing to give 1% of their income, 86% endorse pro-climate norms, 89%
+demand more political action — **and everyone underestimates everyone else**.
+
+It is the best-documented result in the behavioural climate literature, and it
+explains why "talking about it" sits among the levers and not among the
+platitudes: people act conditionally, so believing you are in the minority when
+you are in the 89% is itself a brake.
+
+Per-country figures are not in any open dataset I could find: the global ones are
+here, transcribed like the producers.
+
+### And the bridge that holds it together
+
+If "what can I do" sits next to "178 entities extracted 70% of everything" with
+no bridge, the app contradicts itself. The bridge is historical and documented:
+the idea of a *personal carbon footprint* as a measure of individual
+responsibility was popularised by a **BP advertising campaign in 2004**. Saying
+so is not a way to shrug off responsibility, it is a way to see where the lever
+is — and the section ends with the levers that are **not measured in tonnes**:
+voting, where your money sits, talking about it, doing visible things. There are
+no numbers there, deliberately: putting a tonnage on a vote would mean inventing
+it. The one number circulating in that field — "moving your pension is 21 times
+more effective" — is a campaign figure, not a peer-reviewed one, and the panel
+says so.
+
+Last step: the pointer to the projects panel the app already has, where "do
+something" stops being a platitude because there is a list of real initiatives
+underneath, with URLs verified against actual citations.
+
+## Where we are heading
+
+One panel, and the order of the two sections matters. First **where this road
+leads**: the five IPCC SSP scenarios at end of century, from 1.4 to 4.4 °C. Then
+**what has already changed** — the other way round the second would look like
+consolation after bad news; as it is, it is the answer to the question the fork
+leaves open.
+
+On the scenarios there is a trap deliberately avoided: the IPCC measures against
+**1850-1900**, this app's map against **1951-1980**. Two different zeros, and
+attaching the projections to the end of the timeline would have added a quarter
+of a degree while pretending nothing happened. That is why the scenarios live in
+a separate chart with their baseline written beside them. And since the IPCC
+publishes three twenty-year windows rather than a value per year, the bands are
+the *very likely* range and the segments between points are declared as a
+connector, not data.
+
+Then the numbers almost nobody knows, all from `npm run data:progress` in 2.2 KB:
+
+| | |
+|---|---|
+| Solar PV | **−99.8%** since 1975: from $128.27 to $0.26 per watt |
+| Installed solar | from 1.2 GW (2000) to **1,866 GW** (2024) |
+| Solar per kWh | −90% since 2010 · onshore wind −91% since 1984 |
+| Renewable electricity | 33.8% of the world in 2025 |
+
+With one detail kept on purpose: **hydro and geothermal got more expensive**. The
+story is not "everything got cheap", it is that two new technologies collapsed
+while the old ones did not — and that is a more useful story, because it says
+where the learning curve worked and where it did not.
+
+## How we know
+
+Two answers to two objections.
+
+**"Nobody could have known."** A timeline of the science: Eunice Foote in 1856,
+Tyndall in 1859, Arrhenius in 1896, Callendar in 1938, Keeling in 1958, the White
+House report to Lyndon Johnson in 1965, Charney in 1979, Hansen before the Senate
+in 1988, the first IPCC in 1990. The basic physics is 170 years old; the first
+formal warning to a head of government is sixty.
+
+**"You're picking these numbers."** Every panel in this app declares, in small
+print, the convention it uses — baseline 1951-1980 against 1850-1900, CO₂ against
+CO₂e, GWP over 100 years, territorial against consumption, upstream against
+downstream, one reference year per metric, coverage. Here they are explained
+once, in full, in one place. It is the page that makes the rest checkable, and
+the one somebody who wants to trust the app opens first.
+
+## Project search (optional)
+
+The location panel can search the web for environmental projects to join, through
+**OpenRouter** with the web search plugin.
+
+**Every URL is verified against the real search results.** A model can write the
+plausible URL of a beach clean-up that does not exist; it cannot make it appear
+among the citations. `discoverProjects.ts` reads the URLs from the response's
+`url_citation` annotations and discards anything that does not match, reporting
+how many it dropped. The panel distinguishes *page found* (exact URL among the
+citations) from *domain only* (the organisation's site is real, the specific page
+is not).
+
+Config aligned with `startup-buddy`: EU routing by default (`eu.openrouter.ai` +
+`data_collection: "deny"`, `zdr: true`), the `web` plugin with an explicit
+`max_results` instead of the `:online` suffix, and response healing.
+
+`provider.require_parameters: true` is not a detail: without it the router can
+pick an endpoint that ignores `response_format`, and the JSON schema silently
+decays into a suggestion.
+
+It is the difference between "an AI says there is a clean-up" and "a page exists
+that says there is a clean-up". The second still needs checking — and the
+interface declares that instead of hiding it.
+
+Cost control: the search only runs **on click**, results are cached per 0.5°
+geographic cell (6 hours), and the endpoint has a per-IP cap and a global daily
+one.
 
 ```bash
-cp .env.example .env    # poi inserisci OPENROUTER_API_KEY
+cp .env.example .env    # then add OPENROUTER_API_KEY
 ```
 
-Il modello è configurabile via `OPENROUTER_MODEL` senza toccare il codice, e
-compare nella riga di provenienza sotto i risultati.
+The model is configurable through `OPENROUTER_MODEL` without touching code, and
+appears in the provenance line under the results.
 
-Senza chiave il resto dell'app funziona normalmente: il pannello progetti
-mostra un errore, tutto il resto no.
+Without a key the rest of the app works normally: the projects panel shows an
+error, nothing else does.
 
 ## Stack
 
 React 18 · TypeScript · Vite · Tailwind · MapLibre GL · Recharts
 
-Nessuna API key per il nucleo dell'app: il basemap è CARTO Dark Matter, il
-geocoding e ERA5 sono Open-Meteo, tutti keyless. Serve una chiave OpenRouter
-solo per la ricerca progetti — e nessun SDK: è una `fetch` a un endpoint
-OpenAI-compatibile.
+No API key for the core of the app: the basemap is CARTO Dark Matter, geocoding
+and ERA5 are Open-Meteo, all keyless. An OpenRouter key is only needed for
+project search — and no SDK: it is a `fetch` to an OpenAI-compatible endpoint.
 
-## Avvio
+The interface is available in **Italian, English and Spanish**. Data modules stay
+locale-neutral — ids, numbers, colours and sources live once — and the readable
+text lives in `src/i18n/`, so a translation can never move a figure by accident.
+
+## Getting started
 
 ```bash
 npm install
@@ -347,356 +652,88 @@ npm run data
 npm run dev
 ```
 
-`npm run data` va eseguito una volta: `public/data/` non è versionato.
+`npm run data` runs once: `public/data/` is not versioned.
 
-In dev l'endpoint `/api/discover-projects` è servito da un middleware Vite che
-carica lo **stesso** handler della function Vercel, così locale e produzione non
-possono divergere. La chiave resta nel processo Node: non ha prefisso `VITE_`,
-quindi Vite non la inserisce nel bundle.
+In dev the `/api/discover-projects` endpoint is served by a Vite middleware that
+loads the **same** handler as the Vercel function, so local and production cannot
+drift. The key stays in the Node process: it has no `VITE_` prefix, so Vite never
+puts it in the bundle.
 
-## Comandi
+## Commands
 
 | | |
 |---|---|
 | `npm run dev` | dev server |
-| `npm run data` | rigenera tutti i dati (griglia + paesi) |
-| `npm run data:climate` | solo la griglia GISTEMP |
-| `npm run data:emissions` | solo il layer per paese |
-| `npm run data:pollution` | solo le metriche non-CO₂ (aria, acqua, plastica, azoto) |
-| `npm run data:progress` | solo le curve di quello che sta funzionando |
-| `npm run build` | build di produzione |
+| `npm run data` | regenerate every dataset |
+| `npm run data:climate` | only the GISTEMP grid |
+| `npm run data:emissions` | only the per-country layer |
+| `npm run data:pollution` | only the non-CO₂ metrics (air, water, plastic, nitrogen) |
+| `npm run data:progress` | only the curves of what is working |
+| `npm run data:food` | only the food footprints |
+| `npm run data:adaptation` | only the ND-GAIN adaptation index |
+| `npm run build` | production build |
 | `npm run lint` | typecheck |
 
-## Giorni che si sentono
+## Shareable links
 
-`+1,8 °C` è un'astrazione. «38 notti sopra i 20 gradi invece di 4» no.
-
-Il pannello di un luogo conta, sulla serie giornaliera ERA5, i giorni sopra i
-30 °C, le notti sopra i 20 e i giorni di gelo, mediati sulle stesse due finestre
-trentennali delle temperature assolute. Massime e minime triplicano il JSON ma
-non la banda — sono ~190 KB gzippati per 86 anni, perché una colonna di numeri
-simili si comprime bene.
-
-Due regole tengono onesto il conteggio:
-
-- un anno con buchi conterebbe meno giorni sopra soglia **solo perché ne ha meno
-  in tutto**, quindi sotto la soglia di completezza non entra in nessuna media;
-- una riga compare solo se in quel posto significa qualcosa. Le gelate a
-  Singapore e i 30 °C a Tromsø sarebbero due righe di zeri, e uno zero che non
-  cambia non racconta niente.
-
-Il colore del delta segue **il verso del riscaldamento, non il segno del
-numero**: più notti tropicali e meno gelate dicono la stessa cosa.
-
-## Link condivisibili
-
-Anno, punto aperto, pannello e layer stanno nella query string, in inglese e snake_case
-(la lingua dell'interfaccia invece resta locale al browser e non passa dall'URL):
+Year, open point, panel, map layer and tour step live in the query string:
 
 ```
-?year=2003&lat=41.903&lon=12.496&place=Roma&country=Italia&country_code=IT&layer=pc&panel=sectors
+?year=2003&lat=41.903&lon=12.496&place=Rome&layer=pc&panel=sectors&tour=3
 ```
 
-Si scrive con `replaceState` e con 250 ms di ritardo: scorrere gli anni non deve
-riempire la cronologia di 146 voci da cui il tasto "indietro" non esce più, né
-martellare l'API di history durante l'animazione.
+Parameter names are English and snake_case; the interface language is **not** in
+there — it is detected from the browser and saved in `localStorage`, because a
+shared link should not impose the sender's language on whoever opens it.
 
-## Scorciatoie
+It is written with `replaceState` and a 250 ms delay: scrubbing the years must
+not fill the history with 146 entries the back button cannot escape, nor hammer
+the history API during playback.
 
-`spazio` play/pausa · `←` `→` anno precedente/successivo · click sulla mappa per
-interrogare un punto qualsiasi.
+## Shortcuts
 
-## Note di lettura
+`space` play/pause · `←` `→` previous/next year · click the map to query any
+point · `esc` closes a full-screen panel. During the tour the arrows move between
+steps instead of scrubbing years.
 
-Le anomalie sono riferite alla **baseline 1951-1980**, la convenzione GISTEMP —
-non al periodo preindustriale. Il dato "riscaldamento" nel pannello di dettaglio
-confronta invece `1880-1909` con l'ultimo decennio, che è la lettura più
-intuitiva per un luogo specifico.
+## Reading notes
 
-La risoluzione è di 2°, quindi una città eredita la curva della sua cella: Napoli
-e Salerno condividono lo stesso valore. È la risoluzione della scienza
-disponibile, non un limite dell'app — ma va detto invece che lasciato intendere
-il contrario.
+Anomalies are relative to the **1951-1980 baseline**, the GISTEMP convention —
+not to pre-industrial. The "warming" figure in the detail panel instead compares
+`1880-1909` with the most recent decade, which is the more intuitive reading for
+a specific place.
 
-Le aree trasparenti sui primi decenni non sono zeri: sono **assenza di copertura
-strumentale**. Nel 1880 la griglia è coperta al 68%, nel 2025 al 99%.
+Resolution is 2°, so a city inherits the curve of its cell: Naples and Salerno
+share the same value. That is the resolution of the available science, not a
+limitation of the app — but it should be said rather than left to be assumed.
 
-Il layer per paese **non dipende dall'anno scelto** sulla linea del tempo: è una
-fotografia dell'ultimo anno disponibile, e la legenda lo scrive. Kosovo, Cipro
-del Nord, Somaliland e Sahara Occidentale non si colorano: non hanno un codice
-ISO nella tabella delle emissioni.
+Transparent areas in the early decades are not zeros: they are **absence of
+instrumental coverage**. In 1880 the grid is 68% covered, in 2025 99%.
 
-I confini sono Natural Earth **1:110m**, e a quella scala i micro-stati non hanno
-una forma propria: le coordinate di Singapore cadono dentro la Malaysia. Per un
-luogo cercato l'attribuzione la fa il **codice del paese** che arriva dal
-geocoder, che non ha questo problema; per un punto cliccato la fa la geometria, e
-per i paesi che nel file non ci sono il pannello dice che non ci sono invece di
-mostrare i numeri del vicino. Anche l'Antartide manca — non ha popolazione,
-quindi non ha una riga nelle emissioni, quindi non ha una forma — ed è il motivo
-per cui sotto i 60° S il confronto terra/mare non compare.
+The country layer **does not depend on the year** chosen on the timeline: it is a
+snapshot of the most recent available year, and the legend says so. Kosovo,
+Northern Cyprus, Somaliland and Western Sahara are not coloured: they have no ISO
+code in the emissions table.
 
-## Oltre la CO₂
+## Sources
 
-La CO₂ scalda, ma non si respira — e non è quello che uccide adesso. Tre
-sezioni portano l'inquinamento che non è carbonio.
-
-### Che aria si respira (nel pannello di un luogo)
-
-Il PM2.5 del punto aperto, da **Open-Meteo Air Quality**: stesso fornitore
-keyless dell'archivio ERA5, dietro c'è il modello CAMS. Una richiesta sola
-(~32 KB gzippati) porta il valore di adesso e l'anno solare completo appena
-chiuso.
-
-Il numero grosso non è il valore assoluto ma il **rapporto sulla linea guida
-OMS** — 5 µg/m³ di media annua — perché "2,4 volte la soglia" si capisce senza
-sapere cosa sia un microgrammo per metro cubo. Sotto, i giorni sopra la soglia
-giornaliera (15 µg/m³). Roma: 12,2 µg/m³, 94 giorni su 365. Delhi: 80,3 µg/m³,
-**365 giorni su 365**. Reykjavík: 3,1, zero giorni.
-
-Due regole tengono onesto il conteggio, le stesse dei giorni sopra i 30 °C: un
-giorno entra solo con almeno 18 ore misurate, e un anno solo con almeno 300
-giorni. E la soglia giornaliera si applica alla **media del giorno**, non ai
-picchi orari: contare le ore darebbe un numero più grande e senza significato.
-
-Il gancio con il resto dell'app c'era già: il pannello di un paese spiega che
-l'attribuzione in °C supera il riscaldamento osservato *perché gli aerosol ne
-mascherano una parte*. Quegli aerosol sono questo PM2.5. Lo stesso fumo tiene
-il pianeta un po' più fresco e riempie i polmoni — l'app scriveva metà della
-frase.
-
-### Cinque metriche in più sulla mappa
-
-Una terza scheda nel selettore, accanto a «chi lo subisce» e «chi lo causa»:
-
-| | |
-|---|---|
-| **Aria (PM2.5)** | esposizione media della popolazione, µg/m³ |
-| **Morti** | decessi attribuibili all'inquinamento dell'aria, per 100.000 |
-| **Acqua** | prelievi sulle risorse rinnovabili, % |
-| **Plastica** | plastica mal gestita pro capite, kg/anno |
-| **Azoto** | fertilizzante azotato per ettaro coltivato, kg/ha |
-
-Scheda separata e non altri cinque chip in fondo a quella del carbonio: il
-PM2.5 non è un tipo di CO₂, e accanto a «pro capite» si sarebbe letto come una
-variante dello stesso conto.
-
-**Le classi non sono numeri tondi.** Dove esiste una soglia concordata è quella
-a fare da confine: il PM2.5 usa la linea guida OMS 2021 e i suoi quattro
-obiettivi intermedi (5, 10, 15, 25, 35), lo stress idrico le classi dell'obiettivo
-ONU 6.4.2 — e sopra il 100% un paese preleva più di quanto si rigeneri, che
-succede a diciassette paesi. Inventare una scala avrebbe reso i colori arbitrari
-proprio dove esiste un accordo internazionale su dove sta il limite.
-
-`scripts/build-pollution-data.mjs` unisce l'API della **Banca Mondiale** (che
-ridistribuisce OMS e FAO) e due dataset **Our World in Data**, e ne fa una
-tabella per ISO3 di 16 KB **senza geometrie**: le forme le ha già il file delle
-emissioni, e il client unisce i due al volo. Vale la stessa regola di sempre —
-un anno di riferimento per metrica, e chi non ce l'ha resta grigio — con una
-differenza: l'anno scelto è quello che **copre più paesi**, non il più recente,
-perché l'ultimo pubblicato è quasi sempre mezzo vuoto.
-
-Una trappola trovata per strada: gli aggregati della Banca Mondiale (`WLD`,
-`EUU`, `ARB`) hanno un ISO3 dall'aria legittima e passano qualunque controllo
-sul formato. L'endpoint degli indicatori non dice quali siano — il campo
-`region` torna `null` per tutti — quindi l'elenco dei paesi veri va chiesto a
-`/country`, dove un aggregato ha `region.id === 'NA'`. Senza, il mondo intero
-finiva in classifica come se fosse un paese.
-
-### I confini del pianeta
-
-La sezione che rimette il clima in scala. Nove limiti, **sette superati**: il
-clima è uno dei nove ed è il quinto per distanza dal limite. Azoto e fosforo
-stanno a tre volte il confine, la biosfera a più di dieci.
-
-Le barre misurano **quante volte il limite**, non il valore assoluto: ppm,
-teragrammi di azoto e unità Dobson non starebbero sulla stessa scala in nessun
-altro modo. Metà traccia è il confine; il numero vero resta scritto accanto a
-ogni riga. Due righe hanno il verso invertito — foresta rimasta e saturazione di
-aragonite si superano **scendendo** — e senza dichiararlo nei dati avrebbero
-avuto la barra dalla parte sbagliata.
-
-Valori da Richardson et al., *Science Advances* 2023: una valutazione sola,
-internamente coerente, invece di nove numeri presi da nove posti. Lo stato è
-quello del **Planetary Health Check 2025**, che ha dichiarato superata anche
-l'acidificazione degli oceani — la settima. È l'unica riga dove le due fonti si
-sovrappongono, e porta i numeri del 2025: dichiarato, invece che mescolato in
-silenzio.
-
-E l'ozono, entro il limite e in recupero, resta lì a ricordare che un problema
-ambientale globale, una volta, si è chiuso.
-
-## Chi le estrae, e cosa posso fare
-
-Le ultime due sezioni chiudono il cerchio: da una parte le imprese, dall'altra
-la persona che guarda. Vanno lette insieme, ed è il motivo per cui sono state
-scritte insieme.
-
-### La terza lente: chi le estrae
-
-Accanto a «da dove escono» e «a cosa servono», il taglio **a monte**: chi tira
-il carbonio fuori dal terreno. [Carbon Majors](https://carbonmajors.org/briefing/Carbon-Majors-2024-Data-Update-35466)
-traccia **34,7 Gt CO₂e nel 2024 a 166 soggetti**, e il 70% di tutta la CO₂
-fossile dell'era industriale a 178. Ne bastano 32 per superare metà delle
-emissioni mondiali.
-
-Non è un doppio conteggio delle altre due schede: la CO₂ del petrolio la emette
-chi lo brucia, questa lente dice chi l'ha estratto — la stessa quantità
-guardata dall'altro capo della filiera, esattamente come la lente dei consumi.
-
-Nella stessa scheda, **chi la confeziona**: i marchi ritrovati nei rifiuti
-raccolti dai volontari del [Global Brand Audit](https://www.breakfreefromplastic.org/2024/02/07/bffp-movement-unveils-2023-global-brand-audit-results/)
-— 8.804 volontari in 41 paesi, 537.719 pezzi contati. È l'altra faccia della
-metrica «plastica mal gestita» sulla mappa: lì i paesi, qui le aziende. E la
-classifica **non è per numero di pezzi** ma per quanti paesi diversi ritrovano
-quel marchio: nel 2023 il secondo ne ha lasciati di più, ma in 30 paesi contro
-40. Contare i pezzi premierebbe i posti dove si raccoglie meglio, non i marchi
-più diffusi — e siccome la differenza non è ovvia, il pannello la scrive.
-
-**Queste sono le uniche cifre del progetto copiate a mano.** Il CSV di Carbon
-Majors è gratuito ma dietro un download interattivo che uno script non
-attraversa (l'ho provato: torna la pagina HTML), e i brand audit escono solo in
-PDF annuali. Quindi niente pipeline che finge di aggiornarsi da sola: ci sono i
-numeri dei comunicati, con anno e link accanto a ciascuno, e il pannello dice
-che sono trascritti.
-
-### Cosa posso fare
-
-Il contrasto che regge la sezione, da [Wynes & Nicholas 2017](https://iopscience.iop.org/article/10.1088/1748-9326/aa7541):
-vivere senza auto vale **2,4 t/anno**, cambiare le lampadine **0,10**. Le due
-azioni che tutte le campagne citano — riciclare e le lampadine — stanno in
-fondo, e nel pannello sono marcate come «raccomandate» proprio per rendere
-visibile lo scarto fra quello che ci dicono di fare e quello che pesa.
-
-Le barre non sono in scala fra loro: la traccia è lunga quanto **una persona
-media del mondo** (5,29 t, dal riferimento mondiale del dataset dell'app), con
-un segno alla quota compatibile con 1,5 °C. Così si vede a occhio che nemmeno
-la scelta più grossa copre metà di quello che emette una persona media — e che
-vivere senza auto risparmia più dell'intera quota equa annuale di una persona.
-
-**Una voce è esclusa apposta.** Lo stesso studio mette in cima «un figlio in
-meno» a 58,6 t/anno: è la cifra più contestata del lavoro, perché attribuisce a
-chi genera una quota delle emissioni future di tutti i discendenti, con una
-convenzione contabile che non si applica a nient'altro qui dentro. Il pannello
-dice che esiste e perché non c'è, invece di toglierla in silenzio.
-
-E poi la parte che tiene insieme le due sezioni. Se «cosa posso fare» sta
-accanto a «178 soggetti hanno estratto il 70% di tutto» senza un ponte, l'app si
-contraddice da sola. Il ponte è storico e documentato: l'idea di *impronta di
-carbonio personale* come misura di responsabilità individuale è stata resa
-popolare da una campagna pubblicitaria di **BP del 2004**. Dirlo non serve a
-togliersi la responsabilità, serve a vedere dove sta la leva — e infatti la
-sezione finisce con le leve che **non si misurano in tonnellate**: voto, dove
-stanno i soldi, parlarne, fare cose che si vedono. Lì non ci sono numeri, ed è
-deliberato: dare un valore in tonnellate al voto vorrebbe dire inventarlo.
-L'unico numero che gira in quel campo — «spostare la pensione è 21 volte più
-efficace» — è di campagna, non di letteratura, e il pannello lo dice.
-
-Ultimo passo: il rimando al pannello progetti che l'app ha già, dove «fai
-qualcosa» smette di essere un luogo comune perché sotto c'è un elenco di
-iniziative vere, con gli URL verificati contro le citazioni reali.
-
-## Renderlo personale, e non lasciarlo senza uscita
-
-Le ultime aggiunte non portano dati nuovi sul tavolo per il gusto di portarli:
-rispondono ai due modi in cui un'app così perde le persone. O resta astratta —
-e allora non riguarda nessuno — o schiaccia, e allora chi legge smette di
-guardare.
-
-### Da quando ci sei tu
-
-Nel pannello di un luogo si scrive l'anno di nascita e la stessa serie che
-disegna il grafico viene riletta con un'altra origine: quanto si è scaldato
-**questo punto** da allora, e quanti dei dieci anni più caldi mai misurati lì
-cadono dentro una vita sola.
-
-Zero richieste in più — è la cella di griglia già caricata. Il confronto è fra
-il **decennio attorno** alla nascita e l'ultimo decennio, non fra due anni
-singoli: un anno secco è rumore meteorologico e il confronto sarebbe col caso.
-L'anno resta in `localStorage` e non entra mai nell'URL: è l'unico dato
-personale che l'app tocca, e un link condiviso non se lo deve portare dietro.
-
-### Quanto tempo resta
-
-Nel pannello delle azioni, accanto alle leve e mai da solo — un conto alla
-rovescia senza una leva vicino produce fatalismo, che è l'opposto di quello che
-quella schermata sta cercando di fare.
-
-Il bilancio viene da [Indicators of Global Climate Change 2024](https://essd.copernicus.org/articles/17/2641/2025/)
-(130 Gt CO₂ dall'inizio del 2025, 50% di probabilità di restare sotto 1,5 °C);
-il **ritmo di consumo no**: sono i 43,2 Gt che escono dal riferimento mondiale
-di `co2-countries.json`, fossili più uso del suolo. Le due cifre restano così
-coerenti fra loro e il conto si può rifare a mano.
-
-Il numero mostrato è **già al netto di quanto è stato emesso dal 2025** — e la
-didascalia lo dice, perché "130 Gt residue dall'inizio del 2025" accanto a
-"1,4 anni" senza quella riga sembra una contraddizione invece che una
-sottrazione.
-
-### Quasi tutti sono d'accordo, e quasi nessuno lo sa
-
-Su 130.000 persone in 125 paesi ([Andre et al., *Nature Climate Change* 2024](https://www.uni-bonn.de/en/news/weltweite-befragung-zeigt-breite-mehrheit-der-weltbevoelkerung-fuer-den-klimaschutz)):
-il 69% è disposto a versare l'1% del proprio reddito, l'86% condivide le norme
-pro-clima, l'89% chiede più azione politica — **e tutti sottostimano gli
-altri**.
-
-È il risultato meglio documentato della letteratura sul comportamento
-climatico, e spiega perché «parlarne» sta fra le leve e non fra i modi di dire:
-le persone agiscono in modo condizionale, quindi credere di essere in minoranza
-quando si è nell'89% è già di per sé un freno.
-
-Le cifre per paese non sono in nessun dataset aperto che sia riuscito a
-trovare: qui ci sono quelle globali, trascritte come i produttori.
-
-### Il bivio, e quello che sta già funzionando
-
-Un pannello nuovo, e l'ordine delle due sezioni conta. Prima **dove porta questa
-strada**: i cinque scenari SSP dell'IPCC a fine secolo, da 1,4 a 4,4 °C. Poi
-**quello che è già cambiato** — al contrario, la seconda sembrerebbe una
-consolazione dopo la brutta notizia; così com'è, è la risposta alla domanda che
-il bivio lascia aperta.
-
-Sugli scenari c'è una trappola che ho evitato di proposito: l'IPCC misura sul
-**1850-1900**, la mappa di quest'app sul **1951-1980**. Sono due zeri diversi, e
-attaccare le proiezioni in coda alla linea del tempo avrebbe sommato un quarto
-di grado facendo finta di niente. Per questo gli scenari vivono in un grafico
-separato con la base scritta accanto. E siccome l'IPCC pubblica tre finestre
-ventennali e non un valore per anno, le bande sono l'intervallo *molto
-probabile* e i segmenti fra i punti sono dichiarati come collegamento, non dati.
-
-Poi i numeri che quasi nessuno conosce, tutti da `npm run data:progress` in
-2,2 KB:
-
-| | |
-|---|---|
-| Fotovoltaico | **−99,8%** dal 1975: da 128,27 a 0,26 dollari per watt |
-| Solare installato | da 1,2 GW nel 2000 a **1.866 GW** nel 2024 |
-| Costo del kWh solare | −90% dal 2010; eolico a terra −91% dal 1984 |
-| Elettricità rinnovabile | 33,8% del mondo nel 2025 |
-
-Con un dettaglio che tengo apposta: **idroelettrico e geotermico sono
-rincarati**. La storia non è «tutto è diventato economico», è che due
-tecnologie nuove sono crollate mentre le vecchie no — ed è una storia più utile,
-perché dice dove ha funzionato la curva di apprendimento e dove no.
-
-## Fonti
-
-- [NASA GISTEMP v4](https://data.giss.nasa.gov/gistemp/) — GHCNv4 + ERSSTv5, smoothing 1200 km
-- [Open-Meteo](https://open-meteo.com/) — archivio ERA5 e geocoding
-- [Climate Watch / WRI](https://ourworldindata.org/emissions-by-sector) — emissioni per settore, 2016
-- [Our World in Data · Global Carbon Budget](https://ourworldindata.org/co2-dataset-sources) — emissioni per paese, combustibili, energia pro capite
-- [Jones et al. (2024), via OWID](https://ourworldindata.org/contributed-most-global-warming) — gradi di riscaldamento attribuibili a ogni paese
-- [Natural Earth](https://www.naturalearthdata.com/) — confini 1:110m
-- [Open-Meteo Air Quality](https://open-meteo.com/en/docs/air-quality-api) — PM2.5 orario, modello CAMS
-- [Banca Mondiale · WDI](https://data.worldbank.org/) — PM2.5, mortalità da inquinamento dell'aria, stress idrico (dati OMS e FAO)
-- [Our World in Data](https://ourworldindata.org/plastic-pollution) — plastica mal gestita (Meijer et al. 2021) e azoto (FAO)
-- [Richardson et al., Science Advances 2023](https://www.science.org/doi/10.1126/sciadv.adh2458) — i nove confini planetari
-- [Planetary Health Check 2025](https://www.planetaryhealthcheck.org/) — stato dei confini (PIK)
-- [Carbon Majors](https://carbonmajors.org/) — emissioni per produttore di fossili e cemento (InfluenceMap)
-- [Break Free From Plastic](https://www.breakfreefromplastic.org/) — brand audit globale della plastica
-- [IPCC AR6 WGI](https://www.ipcc.ch/report/ar6/wg1/) — scenari SSP, tabella SPM.1
-- [Forster et al. · Indicators of Global Climate Change 2024](https://essd.copernicus.org/articles/17/2641/2025/) — bilancio di carbonio residuo
-- [Andre et al. · Nature Climate Change 2024](https://www.uni-bonn.de/en/news/weltweite-befragung-zeigt-breite-mehrheit-der-weltbevoelkerung-fuer-den-klimaschutz) — sostegno reale e percepito all'azione climatica
-- [Our World in Data · energia](https://ourworldindata.org/energy) — prezzi e capacità delle rinnovabili (IRENA, Ember)
-- [Wynes & Nicholas 2017](https://iopscience.iop.org/article/10.1088/1748-9326/aa7541) e [Ivanova et al. 2020](https://iopscience.iop.org/article/10.1088/1748-9326/ab8589) — efficacia delle azioni individuali
-- Fonti per uso finale: [UNEP](https://www.unep.org/resources/publication/2022-global-status-report-buildings-and-construction) (edifici) · [Poore & Nemecek](https://www.science.org/doi/10.1126/science.aaq0216) (cibo) · [Lenzen et al.](https://www.nature.com/articles/s41558-018-0141-x) (turismo) · [HCWH](https://noharm-global.org/documents/health-care-climate-footprint-report) (sanità) · [McKinsey & GFA](https://www.mckinsey.com/industries/retail/our-insights/fashion-on-climate) (moda) · [Freitag et al.](https://www.cell.com/patterns/fulltext/S2666-3899(21)00188-4) (digitale)
+- [NASA GISTEMP v4](https://data.giss.nasa.gov/gistemp/) — GHCNv4 + ERSSTv5, 1200 km smoothing
+- [Open-Meteo](https://open-meteo.com/) — ERA5 archive and geocoding
+- [Open-Meteo Air Quality](https://open-meteo.com/en/docs/air-quality-api) — hourly PM2.5, CAMS model
+- [Climate Watch / WRI](https://ourworldindata.org/emissions-by-sector) — emissions by sector, 2016
+- [Our World in Data · Global Carbon Budget](https://ourworldindata.org/co2-dataset-sources) — emissions by country
+- [Our World in Data · energy](https://ourworldindata.org/energy) — renewable prices and capacity (IRENA, Ember)
+- [Natural Earth](https://www.naturalearthdata.com/) — 1:110m borders
+- [World Bank · WDI](https://data.worldbank.org/) — PM2.5, air pollution mortality, water stress (WHO and FAO data)
+- [Our World in Data](https://ourworldindata.org/plastic-pollution) — mismanaged plastic (Meijer et al. 2021) and nitrogen (FAO)
+- [Poore & Nemecek, Science 2018](https://ourworldindata.org/food-choice-vs-eating-local) — food footprints by stage
+- [ND-GAIN Country Index](https://gain.nd.edu/our-work/country-index/) — vulnerability and readiness to adapt
+- [Richardson et al., Science Advances 2023](https://www.science.org/doi/10.1126/sciadv.adh2458) — the nine planetary boundaries
+- [Planetary Health Check 2025](https://www.planetaryhealthcheck.org/) — boundary status (PIK)
+- [Carbon Majors](https://carbonmajors.org/) — emissions by fossil and cement producer (InfluenceMap)
+- [Break Free From Plastic](https://www.breakfreefromplastic.org/) — global plastic brand audit
+- [IPCC AR6 WGI](https://www.ipcc.ch/report/ar6/wg1/) — SSP scenarios, table SPM.1
+- [Forster et al. · Indicators of Global Climate Change 2024](https://essd.copernicus.org/articles/17/2641/2025/) — remaining carbon budget
+- [Andre et al. · Nature Climate Change 2024](https://www.uni-bonn.de/en/news/weltweite-befragung-zeigt-breite-mehrheit-der-weltbevoelkerung-fuer-den-klimaschutz) — actual and perceived support for climate action
+- [Wynes & Nicholas 2017](https://iopscience.iop.org/article/10.1088/1748-9326/aa7541) and [Ivanova et al. 2020](https://iopscience.iop.org/article/10.1088/1748-9326/ab8589) — effectiveness of individual actions
 - [CARTO](https://carto.com/basemaps/) — basemap

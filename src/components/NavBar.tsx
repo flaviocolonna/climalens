@@ -1,4 +1,4 @@
-import { Factory, Globe, Globe2, Sparkles, TrendingUp } from 'lucide-react';
+import { BookOpen, Factory, Globe, Globe2, Sparkles, TrendingUp } from 'lucide-react';
 import { SearchBar } from '@/components/SearchBar';
 import type { Place } from '@/lib/openMeteo';
 import { useI18n } from '@/i18n/LocaleProvider';
@@ -68,6 +68,13 @@ export function NavBar({ years, onSelectPlace, panel, onTogglePanel }: Props) {
         long={t('futurePanel.navLong')}
         short={t('futurePanel.navShort')}
       />
+      <PanelButton
+        active={panel === 'knowledge'}
+        onClick={() => onTogglePanel('knowledge')}
+        icon={BookOpen}
+        long={t('knowledge.navLong')}
+        short={t('knowledge.navShort')}
+      />
     </nav>
   );
 }
@@ -97,8 +104,8 @@ function PanelButton({
     >
       <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-sky-300' : 'text-slate-400'}`} />
       {/* Sotto lg le due voci starebbero strette: resta l'etichetta corta. */}
-      <span className="hidden lg:inline">{long}</span>
-      <span className="lg:hidden">{short}</span>
+      <span className="hidden xl:inline">{long}</span>
+      <span className="xl:hidden">{short}</span>
     </button>
   );
 }

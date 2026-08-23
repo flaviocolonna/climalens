@@ -22,7 +22,6 @@ import { LOCALE_TAG } from '@/i18n/locale';
 import {
   SEQUENTIAL,
   type CountryEmissions,
-  type CountryProps,
   type Metric,
   type MetricClass,
 } from '@/lib/countryEmissions';
@@ -48,12 +47,6 @@ export interface PollutionTable {
   };
   countries: Record<string, Partial<Record<PollutionMetricId, number>>>;
 }
-
-/**
- * Le proprietà di una feature dopo `mergeIntoCountries`: quelle delle
- * emissioni più, se la tabella è arrivata, quelle dell'inquinamento.
- */
-export type MergedCountryProps = CountryProps & Partial<Record<PollutionMetricId, number>>;
 
 /** Quale fonte firma quale metrica: le due non hanno lo stesso editore. */
 export const METRIC_SOURCE: Record<PollutionMetricId, 'worldBank' | 'owid'> = {

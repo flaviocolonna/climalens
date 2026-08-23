@@ -1,5 +1,5 @@
-import { useEffect } from 'react';
-import { ExternalLink, Sparkles, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { ExternalLink, Loader2, Sparkles, X } from 'lucide-react';
 import {
   ACTIONS,
   ACTIONS_SOURCE,
@@ -9,6 +9,8 @@ import {
 } from '@/lib/actions';
 import { CARBON_MAJORS } from '@/lib/producers';
 import { CARBON_BUDGET, CLIMATE_SUPPORT, yearsLeft } from '@/lib/future';
+import { loadFood, type FoodData } from '@/lib/food';
+import { STAGE_COLORS, foodName, stageName } from '@/i18n/content/food';
 import { actionText, multiplierText } from '@/i18n/content/actions';
 import { useI18n } from '@/i18n/LocaleProvider';
 import { LOCALE_TAG, type Locale } from '@/i18n/locale';
@@ -187,6 +189,8 @@ export function ActionsPanel({ onClose }: Props) {
               </p>
             </section>
 
+            <FoodSection />
+
             {/* Il conto alla rovescia sta qui e non da solo in una schermata:
                 senza una leva accanto produce fatalismo, che è l'opposto di
                 quello che questo pannello sta cercando di fare. */}
@@ -352,5 +356,124 @@ function ActionRow({
 
       <p className="mt-1.5 max-w-3xl text-[11px] leading-relaxed text-slate-500">{text.note}</p>
     </article>
+  );
+}
+
+/**
+ * Cosa c'è nel piatto: la scatola che la riga «dieta vegetale» lascia chiusa.
+ *
+ * Le barre sono impilate per fase della filiera, e la fase che conta guardare
+ * è il **trasporto**: è una scheggia in quasi tutte, mentre uso del suolo e
+ * allevamento sono quasi tutto. È il modo più diretto per smontare il «mangia
+ * locale» — non dicendolo, facendolo vedere.
+ */
+function FoodSection() {
+  const { locale, t } = useI18n();
+  const [data, setData] = useState<FoodData | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    loadFood()
+      .then(setData)
+      .catch(() => setFailed(true));
+  }, []);
+
+  const max = data?.foods[0]?.kg ?? 1;
+
+  return (
+    <section className="mt-7 border-t border-white/10 pt-5">
+      <h3 className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+        {t('actionsPanel.foodHeading')}
+      </h3>
+      <p className="mb-4 mt-1.5 max-w-3xl text-xs leading-relaxed text-slate-400">
+        {t('actionsPanel.foodIntro')}
+      </p>
+
+      {failed ? (
+        <p className="text-xs text-slate-500">
+          {t('actionsPanel.foodUnavailable')}{' '}
+          <code className="font-mono text-slate-400">npm run data:food</code>.
+        </p>
+      ) : !data ? (
+        <div className="flex items-center gap-2 py-2 text-xs text-slate-500">
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          {t('actionsPanel.foodLoading')}
+        </div>
+      ) : (
+        <>
+          <div className="max-w-3xl space-y-2">
+            {data.foods.map((food) => (
+              <div key={food.name}>
+                <div className="flex items-baseline gap-2 text-xs">
+                  <span className="min-w-0 flex-1 truncate text-slate-200">
+                    {foodName(food.name, locale)}
+                  </span>
+                  {food.land !== null && (
+                    <span className="hidden shrink-0 text-[10px] text-slate-600 sm:inline">
+                      {t('actionsPanel.foodLandLabel', {
+                        value: food.land.toLocaleString(LOCALE_TAG[locale]),
+                      })}
+                    </span>
+                  )}
+                  <span className="w-14 shrink-0 text-right font-mono font-semibold tabular-nums text-white">
+                    {food.kg.toLocaleString(LOCALE_TAG[locale], { maximumFractionDigits: 1 })}
+                  </span>
+                </div>
+                {/* Segmenti impilati con un distacco di 1px: le fasi sottili —
+                    trasporto, imballaggio — resterebbero altrimenti invisibili
+                    contro quella accanto. */}
+                <div className="mt-1 flex h-1.5 gap-px overflow-hidden rounded-full bg-white/[0.06]">
+                  {food.stages.map((value, i) =>
+                    value <= 0 ? null : (
+                      <span
+                        key={data.meta.stages[i]}
+                        title={`${stageName(data.meta.stages[i], locale)}: ${value}`}
+                        style={{
+                          width: `${(value / max) * 100}%`,
+                          background: STAGE_COLORS[data.meta.stages[i]],
+                        }}
+                      />
+                    ),
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1">
+            {data.meta.stages.map((stage) => (
+              <span key={stage} className="flex items-center gap-1.5 text-[10px] text-slate-500">
+                <span
+                  className="h-2 w-2 shrink-0 rounded-sm"
+                  style={{ background: STAGE_COLORS[stage] }}
+                />
+                {stageName(stage, locale)}
+              </span>
+            ))}
+          </div>
+
+          <p className="mt-3 max-w-3xl text-xs leading-relaxed text-slate-400">
+            {emphasise(
+              t('actionsPanel.foodTransportNote', {
+                share: data.meta.medianTransportShare.toLocaleString(LOCALE_TAG[locale], {
+                  maximumFractionDigits: 1,
+                }),
+              }),
+            )}
+          </p>
+          <p className="mt-2 text-[10px] text-slate-600">
+            <a
+              href={data.meta.sourceUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 transition hover:text-slate-400"
+            >
+              {data.meta.source}
+              <ExternalLink className="h-2.5 w-2.5" />
+            </a>
+          </p>
+        </>
+      )}
+    </section>
   );
 }
