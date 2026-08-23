@@ -118,6 +118,14 @@ export interface Metric {
   /** In ordine crescente. */
   classes: MetricClass[];
   format: (value: number) => string;
+  /**
+   * Una riga in più nel popup, per le metriche in cui il valore dipinto non è
+   * tutta la storia: l'anno che un paese si è dato non si può colorare, ma
+   * senza di lui «scritto in una legge» non dice quasi niente. Riceve tutte le
+   * proprietà della feature, non solo il valore. Opzionale: la stragrande
+   * maggioranza delle metriche si esaurisce nel numero che mostra.
+   */
+  detail?: (props: Record<string, unknown>) => string | null;
 }
 
 const oneDecimal = (v: number, locale: Locale) =>

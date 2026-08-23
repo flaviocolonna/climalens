@@ -46,12 +46,15 @@ export const en = {
   layerControls: {
     beyondCo2: 'Beyond CO₂',
     whoCopes: 'Who copes',
+    whoDelivers: 'Who delivers',
+    fixedYear: 'Fixed at its reference year',
+    backToAnomaly: 'Back to anomalies',
     whoSuffers: 'Who suffers it',
     whoCauses: 'Who causes it',
     loadingCountries: 'Loading country data…',
     generateFileHint: 'Generate the file with',
     metaLine:
-      'Data {year} · {coverage} of {countries} countries · {source}. Independent of the year selected on the timeline.',
+      'Data {year} · {coverage} of {countries} countries · {source}. Fixed at that year, which is why there is no timeline here.',
   },
   locationPanel: {
     closeAria: 'Close panel',
@@ -169,6 +172,31 @@ export const en = {
     foodLandLabel: '{value} m² of land per kg',
     foodLoading: 'Loading the food data…',
     foodUnavailable: 'Food data unavailable. Generate it with',
+    yourHeading: 'Your number',
+    yourIntro:
+      'The ranking below is the world’s. Six questions are enough to work out which of those levers are actually open to you, and to put them in your order.',
+    yourPrivacy:
+      'The answers stay on this page: nothing is saved, nothing goes into the address bar, nothing leaves here.',
+    yourIncomplete: 'Answer all six to see your list.',
+    yourProgress: '{answered} of {total}',
+    yourReset: 'Start over',
+    yourTotalLabel: 'what you can take off in a year',
+    yourUnit: 't CO₂e',
+    yourCompare:
+      'The share compatible with 1.5 °C is {fair} t per person. The world average person emits {world} ({year}).',
+    yourTopLine: 'On its own, **{name}** is worth {share}% of everything you can take off.',
+    yourMissingHeading: 'What does not apply to you',
+    yourCaveat:
+      'These are **medians from a single study**, drawn mostly from wealthy countries: an order of magnitude, not your own tally. And they do not really add up — giving up flying and driving together does not yield exactly the sum of the two lines.',
+    yourTopTen:
+      'The ten most effective options, all together, are worth {total} t a year according to the same study.',
+    yourNoNumber: 'no number, on purpose',
+    yourNothingLeft:
+      'Zero does not mean you emit nothing: it means no lever **measurable in tonnes** is left to you. What remains is the last line, the one without a number.',
+    badgeNotApplicable: 'not yours',
+    badgeAlreadyDone: 'already doing it',
+    rankingProfileNote:
+      'The dimmed rows are the ones your answers rule out. The order stays the study’s: that is where the contrast between what gets advised and what works actually lives.',
   },
   futurePanel: {
     navShort: 'Future',

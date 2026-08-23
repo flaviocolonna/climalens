@@ -227,6 +227,19 @@ export function ClimateMap({ grid, year, marker, onPickPoint, countries, metric 
       if (typeof value !== 'number') line.className = 'is-empty';
       root.append(name, line);
 
+      // Il contorno del numero, quando il numero da solo mente per omissione:
+      // «scritto in una legge» senza l'anno promesso non è un'informazione.
+      const extra =
+        typeof value === 'number'
+          ? m.detail?.(props as unknown as Record<string, unknown>)
+          : null;
+      if (extra) {
+        const note = document.createElement('span');
+        note.className = 'is-detail';
+        note.textContent = extra;
+        root.append(note);
+      }
+
       popup.setLngLat(e.lngLat).setDOMContent(root).addTo(map);
       map.getCanvas().style.cursor = 'pointer';
     };

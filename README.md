@@ -13,21 +13,21 @@ dozen other open sources named where they are used.
 
 ## Start here: the tour
 
-The app grew to five full-screen panels, eleven map metrics and a location panel
+The app grew to five full-screen panels, fourteen map metrics and a location panel
 with eight sections. Content stopped being the bottleneck a while ago; the
 bottleneck is that someone arriving sees a map and five buttons with no idea
 what order to read them in.
 
-So there is a **nine-step tour**, offered in the hint card on first arrival. Each
+So there is a **ten-step tour**, offered in the hint card on first arrival. Each
 step is *a state of the app*, not a new screen — the same map, the same panels —
 in the order the argument actually holds together:
 
 > what is happening → the same map 75 years ago → your own town → who caused it
-> → what you breathe → who can cope → where it comes from → where it leads →
-> what you can do
+> → what you breathe → who can cope → who is keeping their word → where it comes
+> from → where it leads → what you can do
 
 It only works because the whole state was already addressable by URL: the tour
-is, literally, nine internal links. `?tour=3` resumes it at step four.
+is, literally, ten internal links. `?tour=3` resumes it at step four.
 
 ## How it works
 
@@ -312,6 +312,73 @@ The archive is a 4.9 MB zip with 217 CSVs that only downloads if you present a
 dependencies) in the same spirit as the NetCDF-3 reader in the climate script:
 the format is simple enough not to justify a library.
 
+## Who delivers
+
+The fourth question on the map, and the only one that moves in time: not who
+emits, who suffers or who copes, but **whether a country is doing what it said**.
+
+It needs three metrics, because none of them means anything on its own. The
+first alone would reward whoever writes the best laws; the second alone would
+reward whoever is in a recession. It is the comparison that says something, and
+the blurbs of the first two point explicitly at the third so they are not read
+as a score.
+
+| metric | what it is | source |
+|---|---|---|
+| **Pledge** | how binding the promise is, from "no target" up to "written into law" | [Net Zero Tracker](https://ourworldindata.org/grapher/net-zero-targets), via OWID |
+| **Trajectory** | change in fossil CO₂ over the last ten years | Global Carbon Budget, via OWID |
+| **Gap** | percentage points a year between the cut required and the cut under way | computed here |
+
+Coverage on the 169 shapes the map draws: 165 for the pledge and the trajectory,
+125 for the gap.
+
+**The gap is calculated, not found.** It is the only figure in the app that comes
+from an assumption rather than from a source, so the assumption is stated. Two
+rates, both expressed as a share of *today's* emissions, which is the only way to
+make them comparable:
+
+```
+required = 100 / (target year − reference year)
+achieved = (CO₂ ten years ago − CO₂ today) / 10 / CO₂ today × 100
+gap      = required − achieved
+```
+
+The required cut assumes a **straight line down to zero**. That is the simplest
+possible assumption and it is almost certainly wrong in detail, because no
+country descends in a straight line. It answers one question — "at this pace,
+does it get there?" — and for that, a declared linear assumption is worth more
+than a plausible curve built on invisible parameters.
+
+The result, as of the current data: of the 148 countries where the sum can be
+done at all, **9 would get there at the pace they are keeping**. The United
+Kingdom is at −0.2 and Germany at 0.0, right on the line; Italy needs 2.3 more
+points a year, China 4.7, India 5.4, Vietnam 9.0.
+
+**Forty countries are left grey on the gap on purpose.** The source warns that the
+series includes net-zero targets *and other emissions-reduction targets*: a "2030"
+in that table is almost always a partial reduction, and treating it as a full
+zeroing would produce enormous, false gaps. Anything closer than ten years from
+the reference year is excluded, and grey is the honest way of saying "this sum
+cannot be done here".
+
+Two more choices worth naming. The trajectory uses **fossil** CO₂ and not
+"land-use included": the forest component gets revised backwards substantially
+with each edition and, over a ten-year window, would move a country's verdict
+without that country having done anything differently. And the pipeline reads the
+**same** OWID file the emissions layer uses — no second download, and no risk of
+two maps quoting different years.
+
+The pledge is an **ordinal**, not a quantity, so it travels as a number 0–6 and
+the map paints it with the same `step` expression as everything else; the readable
+labels live in `src/lib/pledges.ts`. Because a colour cannot say *when* a country
+promised, the hover popup grew an optional second line (`Metric.detail`): "written
+into law · target: 2050" instead of "written into law".
+
+The tab row is now two rows of a six-column grid, and the split is not cosmetic.
+Above, the three that describe **the state of the world** — what happens here, who
+caused it, what is in the air. Below, the two that describe **how countries
+respond** — who can cope and who is doing what they said.
+
 ## Why it warms this much here
 
 The location panel used to say **how much**. Now it also says **why this much**,
@@ -485,6 +552,71 @@ top with 58.6 t/year: it is the most contested figure in the work, because it
 assigns the parent a share of the future emissions of all descendants under a
 convention that applies to nothing else here. The panel says it exists and why it
 is missing, instead of removing it quietly.
+
+### Your number
+
+The ranking above is the world's, and it is useless to the one person who has no
+car and reads "living car-free" in first place. Six questions — car, flying,
+electricity, home, diet, and whether you have ever talked to anyone about it — are
+enough to work out which of those levers are actually open to you, and to put them
+in your order.
+
+**It is not a footprint calculator, and that is a decision.** Estimating what you
+emit from six answers takes a dozen factors that depend on the country, the
+building, the season: out would come a figure with two decimals and a thirty per
+cent error — a number that looks like yours and is not. Every row here is instead
+a **published median** from [Ivanova et al. 2020](https://iopscience.iop.org/article/10.1088/1748-9326/ab8589),
+which reviewed nearly seven thousand estimates and derived the mitigation
+potential of each option, and the total is the sum of only the rows that apply to
+you. It is a smaller number and a more defensible one.
+
+| lever | tCO₂e/year |
+|---|---|
+| living car-free — and, at the same median, switching to electric | 2.0 |
+| one fewer long-haul return flight | 1.7 |
+| renewable electricity | 1.6 |
+| insulating and refurbishing | 0.9 |
+| vegan diet | 0.9 |
+| generating your own electricity | 0.6 |
+| one fewer medium-haul return flight | 0.6 |
+| vegetarian diet | 0.5 |
+
+Four things keep it honest:
+
+- **It does not add alternatives.** Living car-free and switching to an electric
+  car have the same median: they are the same lever from two sides, and counting
+  both would double a saving you can only have once. One row, with the alternative
+  in the note.
+- **The result does not appear until all six are answered.** With three out of six
+  the total would be lower and would look like good news.
+- **Levers that do not apply stay on screen, with the reason.** "You have no car"
+  is not a hole in the questionnaire, it is half the result. And in the ranking
+  below, the rows your answers rule out are **dimmed, not removed**: that living
+  car-free is worth 2.4 t stays true for someone who has no car.
+- **The last lever has no tonnes**, and the label next to it says so on purpose.
+  Putting a figure on a vote or a pension fund would mean inventing one. It is the
+  panel's own thesis, arriving at the right person in the moment they have just
+  finished counting their own.
+
+The bars run on the **same track as the ranking below** — one average person in the
+world, with the mark at the fair share — because two bar charts in the same colour
+on the same page with two different scales get read against each other and get it
+wrong.
+
+The zero case is handled separately: someone who already has no car, does not fly,
+generates their own electricity, rents and eats no meat gets a **0.0 in green, not
+in alarm red**, plus a line saying that zero does not mean they emit nothing — it
+means no lever measurable in tonnes is left to them, and what remains is the one
+without a number.
+
+The ranking itself is **not reordered**. Sorting it with Ivanova's figures would
+mix two sources inside one table, and that table exists for a precise contrast —
+what schools and governments advise against what works — that a reshuffle would
+destroy. What the profile can say without touching it is whether a row applies to
+you.
+
+The six answers live in component state only: not in `localStorage`, not in the
+URL, not sent anywhere. The panel says so, above the questions.
 
 ### What is on the plate
 
@@ -671,6 +803,7 @@ puts it in the bundle.
 | `npm run data:progress` | only the curves of what is working |
 | `npm run data:food` | only the food footprints |
 | `npm run data:adaptation` | only the ND-GAIN adaptation index |
+| `npm run data:pledges` | only the net-zero pledges and the trajectory gap |
 | `npm run build` | production build |
 | `npm run lint` | typecheck |
 
@@ -694,7 +827,8 @@ the history API during playback.
 
 `space` play/pause · `←` `→` previous/next year · click the map to query any
 point · `esc` closes a full-screen panel. During the tour the arrows move between
-steps instead of scrubbing years.
+steps instead of scrubbing years, and with a country layer on they do nothing at
+all: there is no timeline on screen for them to move.
 
 ## Reading notes
 
@@ -710,10 +844,19 @@ limitation of the app — but it should be said rather than left to be assumed.
 Transparent areas in the early decades are not zeros: they are **absence of
 instrumental coverage**. In 1880 the grid is 68% covered, in 2025 99%.
 
-The country layer **does not depend on the year** chosen on the timeline: it is a
-snapshot of the most recent available year, and the legend says so. Kosovo,
-Northern Cyprus, Somaliland and Western Sahara are not coloured: they have no ISO
-code in the emissions table.
+Only one of the five map modes has a value for every year. The anomalies do, from
+1880; the four country layers are each a snapshot of their own reference year. So
+**the timeline is only on screen for the anomalies** — a slider that moves nothing
+is not an inert control, it is a promise the map does not keep. Along with it go
+the keyboard shortcuts and playback, and the legend line now explains the absence
+instead of pointing at a control that is no longer there.
+
+Below `lg` the layer controls are hidden, and there the slider's place is taken by
+a bar naming the active layer with a way back to the anomalies: without it, a
+shared `?layer=…` link opened on a phone would have no exit.
+
+Kosovo, Northern Cyprus, Somaliland and Western Sahara are not coloured: they have
+no ISO code in the emissions table.
 
 ## Sources
 
@@ -728,6 +871,7 @@ code in the emissions table.
 - [Our World in Data](https://ourworldindata.org/plastic-pollution) — mismanaged plastic (Meijer et al. 2021) and nitrogen (FAO)
 - [Poore & Nemecek, Science 2018](https://ourworldindata.org/food-choice-vs-eating-local) — food footprints by stage
 - [ND-GAIN Country Index](https://gain.nd.edu/our-work/country-index/) — vulnerability and readiness to adapt
+- [Net Zero Tracker](https://ourworldindata.org/grapher/net-zero-targets), via OWID — status and target year of each country’s net-zero commitment
 - [Richardson et al., Science Advances 2023](https://www.science.org/doi/10.1126/sciadv.adh2458) — the nine planetary boundaries
 - [Planetary Health Check 2025](https://www.planetaryhealthcheck.org/) — boundary status (PIK)
 - [Carbon Majors](https://carbonmajors.org/) — emissions by fossil and cement producer (InfluenceMap)
@@ -735,5 +879,6 @@ code in the emissions table.
 - [IPCC AR6 WGI](https://www.ipcc.ch/report/ar6/wg1/) — SSP scenarios, table SPM.1
 - [Forster et al. · Indicators of Global Climate Change 2024](https://essd.copernicus.org/articles/17/2641/2025/) — remaining carbon budget
 - [Andre et al. · Nature Climate Change 2024](https://www.uni-bonn.de/en/news/weltweite-befragung-zeigt-breite-mehrheit-der-weltbevoelkerung-fuer-den-klimaschutz) — actual and perceived support for climate action
-- [Wynes & Nicholas 2017](https://iopscience.iop.org/article/10.1088/1748-9326/aa7541) and [Ivanova et al. 2020](https://iopscience.iop.org/article/10.1088/1748-9326/ab8589) — effectiveness of individual actions
+- [Wynes & Nicholas 2017](https://iopscience.iop.org/article/10.1088/1748-9326/aa7541) — effectiveness of individual actions, against what gets advised
+- [Ivanova et al. 2020](https://iopscience.iop.org/article/10.1088/1748-9326/ab8589) — mitigation potential per consumption option, behind the personal profile
 - [CARTO](https://carto.com/basemaps/) — basemap

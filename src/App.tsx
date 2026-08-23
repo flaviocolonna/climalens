@@ -12,15 +12,22 @@ import { SectorsPanel } from '@/components/SectorsPanel';
 import { TimelineSlider } from '@/components/TimelineSlider';
 import { loadClimateGrid, type ClimateGrid } from '@/lib/climateData';
 import { loadCountryEmissions, type CountryEmissions } from '@/lib/countryEmissions';
-import { isAdaptationMetric, isPollutionMetric, type AnyMetricId } from '@/lib/mapMetrics';
+import {
+  isAdaptationMetric,
+  isPledgeMetric,
+  isPollutionMetric,
+  resolveMetric,
+  type AnyMetricId,
+} from '@/lib/mapMetrics';
 import { loadAdaptation, mergeAdaptation, type AdaptationTable } from '@/lib/adaptation';
 import { loadPollution, mergeIntoCountries, type PollutionTable } from '@/lib/pollution';
+import { loadPledges, mergePledges, type PledgeTable } from '@/lib/pledges';
 import { placeSubtitle } from '@/lib/format';
 import type { Place } from '@/lib/openMeteo';
 import { readUrlState, writeUrlState, type PanelId } from '@/lib/urlState';
 import { TOUR_STEPS, type TourStep } from '@/lib/tour';
 import type { SelectedPlace } from '@/types';
-import { useT } from '@/i18n/LocaleProvider';
+import { useI18n } from '@/i18n/LocaleProvider';
 
 /** Letto una volta sola: da qui in poi l'URL lo scrive l'app, non lo legge. */
 const INITIAL = readUrlState();
@@ -34,7 +41,7 @@ const LocationPanel = lazy(() =>
 );
 
 export default function App() {
-  const t = useT();
+  const { locale, t } = useI18n();
   const [grid, setGrid] = useState<ClimateGrid | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [year, setYear] = useState<number | null>(null);
@@ -46,6 +53,7 @@ export default function App() {
   const [countries, setCountries] = useState<CountryEmissions | null>(null);
   const [pollution, setPollution] = useState<PollutionTable | null>(null);
   const [adaptation, setAdaptation] = useState<AdaptationTable | null>(null);
+  const [pledges, setPledges] = useState<PledgeTable | null>(null);
   const [countriesLoading, setCountriesLoading] = useState(false);
   const [countriesError, setCountriesError] = useState<string | null>(null);
 
@@ -107,9 +115,16 @@ export default function App() {
   const countriesRequested = useRef(false);
   const pollutionRequested = useRef(false);
   const adaptationRequested = useRef(false);
+  const pledgesRequested = useRef(false);
   const handleMetricChange = useCallback((next: AnyMetricId | null) => {
     setMetric(next);
     if (!next) return;
+
+    // I layer per paese sono fermi al loro anno di riferimento, e con loro
+    // sparisce la linea del tempo: lasciare l'animazione accesa vorrebbe dire
+    // far scorrere gli anni sotto una mappa che non li usa, e riconsegnare al
+    // ritorno un anno diverso da quello che si era lasciato.
+    setPlaying(false);
 
     if (!countriesRequested.current) {
       countriesRequested.current = true;
@@ -143,20 +158,31 @@ export default function App() {
           adaptationRequested.current = false;
         });
     }
+
+    if (isPledgeMetric(next) && !pledgesRequested.current) {
+      pledgesRequested.current = true;
+      loadPledges()
+        .then(setPledges)
+        .catch((err: Error) => {
+          setCountriesError(err.message);
+          pledgesRequested.current = false;
+        });
+    }
   }, []);
 
   /**
-   * Le due tabelle diventano una collezione sola. L'identità cambia solo
-   * quando cambia una delle due, così la mappa rifà `setData` una volta e non
-   * a ogni render.
+   * Le tabelle laterali diventano una collezione sola. L'identità cambia solo
+   * quando ne cambia una, così la mappa rifà `setData` una volta e non a ogni
+   * render.
    */
   const mapCountries = useMemo(() => {
     if (!countries) return null;
     let merged = countries;
     if (pollution) merged = mergeIntoCountries(merged, pollution);
     if (adaptation) merged = mergeAdaptation(merged, adaptation);
+    if (pledges) merged = mergePledges(merged, pledges);
     return merged;
-  }, [countries, pollution, adaptation]);
+  }, [countries, pollution, adaptation, pledges]);
 
   /**
    * Un passo del percorso è uno stato dell'app, non una schermata: applica
@@ -204,9 +230,10 @@ export default function App() {
 
   // Keyboard scrubbing, ignored while the search field has focus — e mentre il
   // pannello a tutto schermo è aperto: lì "spazio" non deve animare una mappa
-  // che nessuno sta guardando.
+  // che nessuno sta guardando. Idem con un layer per paese acceso: la linea del
+  // tempo non è sullo schermo, e i tasti non devono muovere uno stato invisibile.
   useEffect(() => {
-    if (!grid || year === null || panel || tourStep !== null) return;
+    if (!grid || year === null || panel || tourStep !== null || metric) return;
     const onKey = (e: KeyboardEvent) => {
       const el = document.activeElement;
       if (el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement) return;
@@ -224,7 +251,7 @@ export default function App() {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [grid, year, panel, tourStep]);
+  }, [grid, year, panel, tourStep, metric]);
 
   const marker = useMemo(
     () => (place ? { latitude: place.latitude, longitude: place.longitude, label: place.name } : null),
@@ -279,8 +306,18 @@ export default function App() {
               <div className="pointer-events-auto flex items-start gap-2.5 rounded-xl border border-white/10 bg-ink-900/70 px-4 py-3 text-xs leading-relaxed text-slate-400 shadow-xl backdrop-blur-md animate-fade-up">
                 <MousePointerClick className="mt-0.5 h-4 w-4 shrink-0 text-slate-500" />
                 <span>
-                  {t('app.hintIntro')} {t('app.hintPressPrefix')} <Kbd>{t('app.spaceKey')}</Kbd>{' '}
-                  {t('app.hintPressMid')} <Kbd>←</Kbd> <Kbd>→</Kbd> {t('app.hintPressSuffix')}
+                  {t('app.hintIntro')}
+                  {/* I tasti si nominano solo quando fanno qualcosa: con un
+                      layer per paese acceso la linea del tempo non c'è, e
+                      pubblicizzare scorciatoie morte è peggio che tacere. */}
+                  {!metric && (
+                    <>
+                      {' '}
+                      {t('app.hintPressPrefix')} <Kbd>{t('app.spaceKey')}</Kbd>{' '}
+                      {t('app.hintPressMid')} <Kbd>←</Kbd> <Kbd>→</Kbd>{' '}
+                      {t('app.hintPressSuffix')}
+                    </>
+                  )}
                   {/* Il percorso si offre qui e non in barra: è il posto dove
                       guarda chi è appena arrivato e non sa da dove cominciare. */}
                   <button
@@ -317,19 +354,47 @@ export default function App() {
               meta={countries?.meta ?? null}
               pollutionMeta={pollution?.meta ?? null}
               adaptationMeta={adaptation?.meta ?? null}
+              pledgeMeta={pledges?.meta ?? null}
               loading={countriesLoading}
               error={countriesError}
             />
           </div>
+          {/* La linea del tempo vale per una mappa sola. Le anomalie hanno un
+              valore per ogni anno dal 1880; i layer per paese sono fermi al
+              loro anno di riferimento — e uno slider che non muove niente non
+              è un controllo inerte, è una promessa che la mappa non mantiene. */}
           <div className="min-w-0 flex-1">
-            <TimelineSlider
-              years={grid.years}
-              year={year}
-              globalAnomaly={grid.globalAnomaly(year)}
-              playing={playing}
-              onYearChange={setYear}
-              onPlayingChange={setPlaying}
-            />
+            {metric === null ? (
+              <TimelineSlider
+                years={grid.years}
+                year={year}
+                globalAnomaly={grid.globalAnomaly(year)}
+                playing={playing}
+                onYearChange={setYear}
+                onPlayingChange={setPlaying}
+              />
+            ) : (
+              /* Solo sotto lg, dove i controlli dei layer sono nascosti: lì,
+                 senza slider, un link `?layer=…` aperto sul telefono non
+                 avrebbe più nessuna via d'uscita. Sopra lg il pannello sta
+                 già qui accanto e dice tutto, anno di riferimento compreso. */
+              <button
+                onClick={() => handleMetricChange(null)}
+                className="pointer-events-auto flex w-full items-center justify-between gap-3 rounded-xl border border-white/10 bg-ink-900/85 px-4 py-3 text-left shadow-2xl backdrop-blur-md transition hover:border-white/20 lg:hidden"
+              >
+                <span className="min-w-0">
+                  <span className="block truncate text-xs text-slate-200">
+                    {resolveMetric(metric, locale).title}
+                  </span>
+                  <span className="mt-0.5 block text-[10px] text-slate-500">
+                    {t('layerControls.fixedYear')}
+                  </span>
+                </span>
+                <span className="shrink-0 text-[11px] text-sky-300">
+                  {t('layerControls.backToAnomaly')}
+                </span>
+              </button>
+            )}
           </div>
         </div>
       </div>

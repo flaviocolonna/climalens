@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { detectLocale, persistLocale, type Locale } from '@/i18n/locale';
 import { DICTIONARIES } from '@/i18n/dictionaries';
 import type { Dictionary } from '@/i18n/dictionary';
@@ -51,7 +51,7 @@ export type TFunction = (path: string, vars?: Vars) => string;
 /** `t('areaEmissions.netLabel', { year: 2022 })` — flat-string lookup + interpolation. */
 export function useT(): TFunction {
   const { dict } = useLocaleContext();
-  return (path, vars) => translate(dict, path, vars);
+  return useCallback((path, vars) => translate(dict, path, vars), [dict]);
 }
 
 /** Full `{locale, setLocale, dict, t}` in one hook, for components that need more than one. */

@@ -46,12 +46,15 @@ export const es = {
   layerControls: {
     beyondCo2: 'Más allá del CO₂',
     whoCopes: 'Quién aguanta',
+    whoDelivers: 'Quién cumple',
+    fixedYear: 'Fijo en su año de referencia',
+    backToAnomaly: 'Volver a las anomalías',
     whoSuffers: 'Quién lo sufre',
     whoCauses: 'Quién lo causa',
     loadingCountries: 'Cargando datos por país…',
     generateFileHint: 'Genera el archivo con',
     metaLine:
-      'Datos {year} · {coverage} de {countries} países · {source}. No dependen del año elegido en la línea de tiempo.',
+      'Datos {year} · {coverage} de {countries} países · {source}. Fijos en ese año: por eso aquí no hay línea de tiempo.',
   },
   locationPanel: {
     closeAria: 'Cerrar panel',
@@ -170,6 +173,31 @@ export const es = {
     foodLandLabel: '{value} m² de tierra por kg',
     foodLoading: 'Cargando los datos de alimentos…',
     foodUnavailable: 'Datos de alimentos no disponibles. Genéralos con',
+    yourHeading: 'Tu número',
+    yourIntro:
+      'La clasificación de abajo es la del mundo. Seis preguntas bastan para saber cuáles de esas palancas están de verdad a tu alcance, y para ponerlas en tu orden.',
+    yourPrivacy:
+      'Las respuestas se quedan en esta página: no se guardan, no van a la barra de direcciones, no salen de aquí.',
+    yourIncomplete: 'Responde las seis para ver tu lista.',
+    yourProgress: '{answered} de {total}',
+    yourReset: 'Empezar de nuevo',
+    yourTotalLabel: 'lo que puedes quitar en un año',
+    yourUnit: 't CO₂e',
+    yourCompare:
+      'La cuota compatible con 1,5 °C es de {fair} t por persona. Una persona media del mundo emite {world} ({year}).',
+    yourTopLine: 'Por sí sola, **{name}** vale el {share}% de todo lo que puedes quitar.',
+    yourMissingHeading: 'Lo que no te afecta',
+    yourCaveat:
+      'Son **medianas de un solo estudio**, sacadas sobre todo de países ricos: un orden de magnitud, no tu cuenta. Y no se suman de verdad — quien deja a la vez de volar y de conducir no obtiene exactamente la suma de las dos líneas.',
+    yourTopTen:
+      'Las diez opciones más eficaces, todas juntas, valen {total} t al año según el mismo estudio.',
+    yourNoNumber: 'sin número, a propósito',
+    yourNothingLeft:
+      'Cero no quiere decir que no emitas: quiere decir que no te queda ninguna palanca **medible en toneladas**. Lo que queda es la última línea, la que no tiene número.',
+    badgeNotApplicable: 'no te afecta',
+    badgeAlreadyDone: 'ya lo haces',
+    rankingProfileNote:
+      'Las filas apagadas son las que tus respuestas descartan. El orden sigue siendo el del estudio: ahí está el contraste entre lo que se aconseja y lo que funciona.',
   },
   futurePanel: {
     navShort: 'Futuro',

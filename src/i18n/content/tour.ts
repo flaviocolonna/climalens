@@ -1,5 +1,5 @@
 /**
- * I testi degli otto passaggi del percorso. Stanno qui e non nel dizionario
+ * I testi dei dieci passaggi del percorso. Stanno qui e non nel dizionario
  * piatto perché sono prosa lunga, uno per passo, e vivono e muoiono con
  * `src/lib/tour.ts`.
  */
@@ -35,6 +35,10 @@ const STEPS: Record<Locale, Record<string, StepText>> = {
     cope: {
       title: 'Chi può permettersi di reggerlo',
       body: 'Esposizione più capacità di adattarsi. È la terza mappa che non somiglia alle altre, e insieme fanno l’argomento intero: subisce di più chi ha causato di meno e può difendersi di meno.',
+    },
+    promises: {
+      title: 'E chi sta mantenendo la parola?',
+      body: 'Quanto deve accelerare ogni paese per rispettare il suo obiettivo, alla sua data, partendo dal ritmo che tiene oggi. Su 148 paesi in cui il conto si può fare, nove ci arriverebbero. Le due schede accanto tengono separate le due metà: cosa hanno promesso e cosa hanno fatto.',
     },
     sectors: {
       title: 'Da cosa viene, davvero',
@@ -74,6 +78,10 @@ const STEPS: Record<Locale, Record<string, StepText>> = {
       title: 'Who can afford to cope',
       body: 'Exposure plus the capacity to adapt. It is the third map that resembles neither of the others, and together they make the whole argument: those hit hardest caused the least and can defend themselves least.',
     },
+    promises: {
+      title: 'And who is keeping their word?',
+      body: 'How much faster each country has to go to meet its own target, by its own date, starting from the pace it keeps today. Of the 148 countries where the sum can be done, nine would get there. The two tabs beside it keep the halves apart: what they promised and what they did.',
+    },
     sectors: {
       title: 'Where it actually comes from',
       body: 'Three ways of cutting the same pie: where the gas comes out, what it was for, and who pulled the carbon out of the ground. Same quantity from three angles — they do not add up, and the panel says so.',
@@ -111,6 +119,10 @@ const STEPS: Record<Locale, Record<string, StepText>> = {
     cope: {
       title: 'Quién puede permitirse aguantarlo',
       body: 'Exposición más capacidad de adaptarse. Es el tercer mapa que no se parece a ninguno de los otros, y juntos forman el argumento entero: sufre más quien menos causó y menos puede defenderse.',
+    },
+    promises: {
+      title: '¿Y quién está cumpliendo su palabra?',
+      body: 'Cuánto tiene que acelerar cada país para cumplir su objetivo, en su fecha, partiendo del ritmo que lleva hoy. De los 148 países donde la cuenta se puede hacer, nueve llegarían. Las dos pestañas de al lado mantienen separadas las dos mitades: lo que prometieron y lo que hicieron.',
     },
     sectors: {
       title: 'De dónde viene, de verdad',

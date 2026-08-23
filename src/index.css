@@ -189,6 +189,12 @@
   color: #64748b;
 }
 
+/* La riga di contorno: presente ma subordinata, o competerebbe con il valore. */
+.climalens-popup .maplibregl-popup-content span.is-detail {
+  font-size: 0.6875rem;
+  color: #7c8899;
+}
+
 .climalens-popup .maplibregl-popup-tip {
   display: none;
 }

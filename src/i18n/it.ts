@@ -47,12 +47,15 @@ export const it = {
   layerControls: {
     beyondCo2: 'Oltre la CO₂',
     whoCopes: 'Chi lo regge',
+    whoDelivers: 'Chi mantiene',
+    fixedYear: 'Fermo al suo anno di riferimento',
+    backToAnomaly: 'Torna alle anomalie',
     whoSuffers: 'Chi lo subisce',
     whoCauses: 'Chi lo causa',
     loadingCountries: 'Carico i dati per paese…',
     generateFileHint: 'Genera il file con',
     metaLine:
-      "Dati {year} · {coverage} paesi su {countries} · {source}. Non dipendono dall'anno scelto sulla linea del tempo.",
+      'Dati {year} · {coverage} paesi su {countries} · {source}. Fermi a quell’anno: per questo qui la linea del tempo non c’è.',
   },
   locationPanel: {
     closeAria: 'Chiudi pannello',
@@ -170,6 +173,31 @@ export const it = {
     foodLandLabel: '{value} m² di terra per kg',
     foodLoading: 'Carico i dati sugli alimenti…',
     foodUnavailable: 'Dati sugli alimenti non disponibili. Generali con',
+    yourHeading: 'Il tuo numero',
+    yourIntro:
+      'La classifica qui sotto è quella del mondo. Sei domande bastano a sapere quali di quelle leve sono davvero aperte a te, e a metterle nel tuo ordine.',
+    yourPrivacy:
+      'Le risposte restano in questa pagina: non vengono salvate, non finiscono nell’indirizzo, non escono da qui.',
+    yourIncomplete: 'Rispondi a tutte e sei per vedere la tua lista.',
+    yourProgress: '{answered} di {total}',
+    yourReset: 'Ricomincia',
+    yourTotalLabel: 'quello che puoi togliere in un anno',
+    yourUnit: 't CO₂e',
+    yourCompare:
+      'La quota compatibile con 1,5 °C è {fair} t a testa. Una persona media del mondo ne emette {world} ({year}).',
+    yourTopLine: 'Da sola, **{name}** vale il {share}% di tutto quello che puoi togliere.',
+    yourMissingHeading: 'Cosa non ti riguarda',
+    yourCaveat:
+      'Sono **mediane di un solo studio**, ricavate soprattutto da paesi ricchi: un ordine di grandezza, non il tuo conto. E non si sommano davvero — chi smette insieme di volare e di guidare non ottiene esattamente la somma delle due righe.',
+    yourTopTen:
+      'Le dieci opzioni più efficaci, tutte insieme, valgono {total} t all’anno secondo lo stesso studio.',
+    yourNoNumber: 'senza numero, apposta',
+    yourNothingLeft:
+      'Zero non vuol dire che non emetti: vuol dire che di leve **misurabili in tonnellate** non te ne è rimasta nessuna. Quello che ti resta è l’ultima riga, che un numero non ce l’ha.',
+    badgeNotApplicable: 'non ti riguarda',
+    badgeAlreadyDone: 'lo fai già',
+    rankingProfileNote:
+      'Le righe spente sono quelle che le tue risposte escludono. L’ordine resta quello dello studio: è lì che sta il confronto fra ciò che viene consigliato e ciò che funziona.',
   },
   futurePanel: {
     navShort: 'Futuro',

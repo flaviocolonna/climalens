@@ -4,6 +4,7 @@ import type { CountryEmissions, MetricId } from '@/lib/countryEmissions';
 import {
   familyOf,
   isAdaptationMetric,
+  isPledgeMetric,
   isPollutionMetric,
   metricsFor,
   type AnyMetricId,
@@ -12,6 +13,7 @@ import {
 } from '@/lib/mapMetrics';
 import { METRIC_SOURCE, type PollutionMetricId, type PollutionTable } from '@/lib/pollution';
 import type { AdaptationTable } from '@/lib/adaptation';
+import type { PledgeTable } from '@/lib/pledges';
 import { useI18n } from '@/i18n/LocaleProvider';
 
 interface Props {
@@ -22,6 +24,7 @@ interface Props {
   meta: CountryEmissions['meta'] | null;
   pollutionMeta: PollutionTable['meta'] | null;
   adaptationMeta: AdaptationTable['meta'] | null;
+  pledgeMeta: PledgeTable['meta'] | null;
   loading: boolean;
   error: string | null;
 }
@@ -34,16 +37,22 @@ const lastOf: Record<MetricFamily, AnyMetricId> = {
   co2: 'pc',
   pollution: 'pm25',
   adaptation: 'gain',
+  // Non `gap`, che pure è il senso della scheda: le tre voci si leggono come
+  // una frase — cosa hanno detto, cosa hanno fatto, quanto manca — e aprire
+  // dall'ultima la spezza. La prima ha anche copertura piena, così il layer
+  // non si presenta mezzo grigio.
+  pledges: 'pledge',
 };
 
 /**
- * Tre domande sulla stessa mappa: cosa succede qui (le anomalie), chi ha
- * causato il riscaldamento (la CO₂), e cosa si respira o si beve (tutto il
- * resto). Sono alternative, non sovrapponibili, e il selettore lo dice invece
- * di lasciarlo scoprire.
+ * Cinque domande sulla stessa mappa, e sono alternative: il selettore lo dice
+ * invece di lasciarlo scoprire.
  *
- * La terza scheda esiste perché il PM2.5 non è un tipo di CO₂: come sesto chip
- * accanto a "pro capite" si sarebbe letto come una variante dello stesso conto.
+ * Le schede stanno su due righe e il taglio non è estetico. In alto le tre che
+ * descrivono **lo stato del mondo** — cosa succede qui, chi l'ha causato, cosa
+ * si respira. In basso le due che descrivono **come i paesi rispondono** — chi
+ * riesce a reggerlo e chi sta facendo quello che ha detto. Su una riga sola
+ * cinque etichette da 52px si troncherebbero tutte a metà parola.
  */
 export function LayerControls({
   baseline,
@@ -52,6 +61,7 @@ export function LayerControls({
   meta,
   pollutionMeta,
   adaptationMeta,
+  pledgeMeta,
   loading,
   error,
 }: Props) {
@@ -64,18 +74,33 @@ export function LayerControls({
 
   return (
     <div className="pointer-events-auto w-72 rounded-xl border border-white/10 bg-ink-900/85 p-3 shadow-2xl backdrop-blur-md">
-      <div className="mb-3 flex gap-0.5 rounded-lg bg-white/5 p-0.5">
-        <ModeTab active={mode === 'anomaly'} onClick={() => onMetricChange(null)}>
+      <div className="mb-3 grid grid-cols-6 gap-0.5 rounded-lg bg-white/5 p-0.5">
+        <ModeTab span="col-span-2" active={mode === 'anomaly'} onClick={() => onMetricChange(null)}>
           {t('layerControls.whoSuffers')}
         </ModeTab>
-        <ModeTab active={mode === 'co2'} onClick={() => onMetricChange(lastOf.co2)}>
+        <ModeTab span="col-span-2" active={mode === 'co2'} onClick={() => onMetricChange(lastOf.co2)}>
           {t('layerControls.whoCauses')}
         </ModeTab>
-        <ModeTab active={mode === 'pollution'} onClick={() => onMetricChange(lastOf.pollution)}>
+        <ModeTab
+          span="col-span-2"
+          active={mode === 'pollution'}
+          onClick={() => onMetricChange(lastOf.pollution)}
+        >
           {t('layerControls.beyondCo2')}
         </ModeTab>
-        <ModeTab active={mode === 'adaptation'} onClick={() => onMetricChange(lastOf.adaptation)}>
+        <ModeTab
+          span="col-span-3"
+          active={mode === 'adaptation'}
+          onClick={() => onMetricChange(lastOf.adaptation)}
+        >
           {t('layerControls.whoCopes')}
+        </ModeTab>
+        <ModeTab
+          span="col-span-3"
+          active={mode === 'pledges'}
+          onClick={() => onMetricChange(lastOf.pledges)}
+        >
+          {t('layerControls.whoDelivers')}
         </ModeTab>
       </div>
 
@@ -148,6 +173,7 @@ export function LayerControls({
               meta={meta}
               pollutionMeta={pollutionMeta}
               adaptationMeta={adaptationMeta}
+              pledgeMeta={pledgeMeta}
             />
           </>
         )
@@ -157,23 +183,48 @@ export function LayerControls({
 }
 
 /**
- * Anno, copertura e fonte della metrica mostrata. Le due famiglie hanno due
- * sidecar diversi perché vengono da due pipeline diverse, e la riga nomina la
- * fonte giusta invece di una generica buona per entrambe.
+ * Anno, copertura e fonte della metrica mostrata. Ogni famiglia ha il suo
+ * sidecar perché viene da una pipeline diversa, e la riga nomina la fonte
+ * giusta invece di una generica buona per tutte.
  */
 function MetaLine({
   metric,
   meta,
   pollutionMeta,
   adaptationMeta,
+  pledgeMeta,
 }: {
   metric: AnyMetricId | null;
   meta: CountryEmissions['meta'] | null;
   pollutionMeta: PollutionTable['meta'] | null;
   adaptationMeta: AdaptationTable['meta'] | null;
+  pledgeMeta: PledgeTable['meta'] | null;
 }) {
   const { t } = useI18n();
   if (!metric) return null;
+
+  if (isPledgeMetric(metric)) {
+    if (!pledgeMeta) return null;
+    // Tre metriche, tre provenienze: l'impegno viene dal registro delle
+    // promesse, la traiettoria dalle emissioni, e il divario da entrambe —
+    // citarne una sola gli attribuirebbe un calcolo che non ha fatto.
+    const source =
+      metric === 'pledge'
+        ? pledgeMeta.source
+        : metric === 'trend'
+          ? pledgeMeta.trajectorySource
+          : pledgeMeta.combinedSource;
+    return (
+      <p className="mt-1.5 text-[10px] leading-relaxed text-slate-600">
+        {t('layerControls.metaLine', {
+          year: pledgeMeta.years[metric],
+          coverage: pledgeMeta.coverage[metric],
+          countries: pledgeMeta.countries,
+          source,
+        })}
+      </p>
+    );
+  }
 
   if (isAdaptationMetric(metric)) {
     if (!adaptationMeta) return null;
@@ -223,17 +274,20 @@ function MetaLine({
 function ModeTab({
   active,
   onClick,
+  span,
   children,
 }: {
   active: boolean;
   onClick: () => void;
+  /** Quante colonne della griglia a sei occupa: tre per riga sopra, due sotto. */
+  span: string;
   children: React.ReactNode;
 }) {
   return (
     <button
       onClick={onClick}
       aria-pressed={active}
-      className={`min-w-0 flex-1 truncate rounded-md px-1 py-1.5 text-[10px] font-medium transition ${
+      className={`${span} min-w-0 truncate rounded-md px-1 py-1.5 text-[10px] font-medium transition ${
         active ? 'bg-white/10 text-white shadow-sm' : 'text-slate-400 hover:text-slate-200'
       }`}
     >

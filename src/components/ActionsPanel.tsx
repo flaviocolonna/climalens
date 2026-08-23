@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ExternalLink, Loader2, Sparkles, X } from 'lucide-react';
 import {
   ACTIONS,
@@ -8,10 +8,21 @@ import {
   type ClimateAction,
 } from '@/lib/actions';
 import { CARBON_MAJORS } from '@/lib/producers';
+import {
+  applicability,
+  buildProfile,
+  FOOTPRINT_SOURCE,
+  QUESTIONS,
+  type Answers,
+  type MissingReason,
+  type QuestionId,
+  type Profile,
+} from '@/lib/footprint';
 import { CARBON_BUDGET, CLIMATE_SUPPORT, yearsLeft } from '@/lib/future';
 import { loadFood, type FoodData } from '@/lib/food';
 import { STAGE_COLORS, foodName, stageName } from '@/i18n/content/food';
 import { actionText, multiplierText } from '@/i18n/content/actions';
+import { leverText, missingText, questionText } from '@/i18n/content/footprint';
 import { useI18n } from '@/i18n/LocaleProvider';
 import { LOCALE_TAG, type Locale } from '@/i18n/locale';
 
@@ -37,6 +48,9 @@ function emphasise(text: string): React.ReactNode {
 /** Le raccomandate, per distinguerle senza affidarsi al solo colore. */
 const ADVISED_COLOR = '#8560c6';
 
+/** Fuori rampa, come l'assorbimento netto sulla mappa: zero e un altro verso, non poco rosso. */
+const NOTHING_LEFT_COLOR = '#308e63';
+
 interface Props {
   onClose: () => void;
 }
@@ -55,6 +69,22 @@ interface Props {
  */
 export function ActionsPanel({ onClose }: Props) {
   const { locale, t } = useI18n();
+
+  /**
+   * Le risposte vivono qui e basta: niente localStorage, niente URL. Sono sei
+   * fatti sulla vita di chi legge, e l'unico posto in cui questa app non ha
+   * nessun motivo di conservarli è tutti quanti.
+   */
+  const [answers, setAnswers] = useState<Answers>({});
+  const profile = useMemo(() => buildProfile(answers), [answers]);
+  const excluded = useMemo(() => applicability(answers), [answers]);
+  // Ricliccare l'opzione già scelta la toglie: una risposta data per sbaglio a
+  // una domanda sulla propria vita deve potersi ritirare, non solo cambiare.
+  const answer = useCallback(
+    (question: QuestionId, option: string) =>
+      setAnswers((prev) => ({ ...prev, [question]: prev[question] === option ? undefined : option })),
+    [],
+  );
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -150,7 +180,15 @@ export function ActionsPanel({ onClose }: Props) {
           </aside>
 
           <div className="min-w-0">
-            <h3 className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+            <YourNumber
+              answers={answers}
+              profile={profile}
+              onAnswer={answer}
+              onReset={() => setAnswers({})}
+              decimal={decimal}
+            />
+
+            <h3 className="mt-8 border-t border-white/10 pt-5 text-[11px] font-medium uppercase tracking-wider text-slate-400">
               {t('actionsPanel.rankingHeading')}
             </h3>
             <p className="mb-4 mt-1.5 max-w-3xl text-xs leading-relaxed text-slate-400">
@@ -172,9 +210,21 @@ export function ActionsPanel({ onClose }: Props) {
               </span>
             </div>
 
+            {profile.answered > 0 && (
+              <p className="mb-4 max-w-3xl text-[11px] leading-relaxed text-slate-500">
+                {t('actionsPanel.rankingProfileNote')}
+              </p>
+            )}
+
             <div className="space-y-3">
               {ACTIONS.map((a) => (
-                <ActionRow key={a.id} action={a} locale={locale} decimal={decimal} />
+                <ActionRow
+                  key={a.id}
+                  action={a}
+                  locale={locale}
+                  decimal={decimal}
+                  excluded={excluded[a.id]}
+                />
               ))}
             </div>
 
@@ -306,23 +356,283 @@ export function ActionsPanel({ onClose }: Props) {
   );
 }
 
+/**
+ * Il tuo numero: sei domande, e la classifica del mondo diventa la tua.
+ *
+ * Il pezzo che mancava al pannello. La lista qui sotto è vera per il pianeta e
+ * inutile per la singola persona che non ha l'auto e legge «vivere senza auto»
+ * al primo posto. Queste sei righe non stimano quanto emetti — sarebbe una
+ * cifra con due decimali e un errore del trenta per cento — ma **quali leve hai
+ * davvero in mano**, e in che ordine.
+ *
+ * Tre scelte che la tengono onesta:
+ *
+ *   - Il risultato non appare finché non ci sono tutte e sei le risposte: con
+ *     tre su sei il totale sarebbe più basso e sembrerebbe una buona notizia.
+ *   - Le leve che non ti riguardano restano scritte, con il perché. «Non hai
+ *     l'auto» non è un buco nel questionario, è metà del risultato.
+ *   - L'ultima leva non ha tonnellate, e la scritta accanto dice che è
+ *     deliberato. È la tesi del pannello, e qui arriva alla persona giusta nel
+ *     momento in cui ha appena finito di contare le proprie.
+ */
+function YourNumber({
+  answers,
+  profile,
+  onAnswer,
+  onReset,
+  decimal,
+}: {
+  answers: Answers;
+  profile: Profile;
+  onAnswer: (question: QuestionId, option: string) => void;
+  onReset: () => void;
+  decimal: (v: number, digits?: number) => string;
+}) {
+  const { locale, t } = useI18n();
+  const complete = profile.answered === QUESTIONS.length;
+  const numeric = profile.levers.filter((l) => l.tonnes !== null);
+  const top = numeric[0] ?? null;
+  // La stessa traccia della classifica qui sotto — una persona media del mondo —
+  // e non il massimo di questa lista. Due grafici a barre dello stesso colore
+  // nella stessa pagina, con due scale diverse, si leggono l'uno contro l'altro
+  // e sbagliano: la leva più grande di chi ha poche leve riempirebbe la riga.
+  const pct = (v: number) => (v / REFERENCES.worldPerCapita) * 100;
+
+  return (
+    <section>
+      <h3 className="text-[11px] font-medium uppercase tracking-wider text-slate-400">
+        {t('actionsPanel.yourHeading')}
+      </h3>
+      <p className="mb-1.5 mt-1.5 max-w-3xl text-xs leading-relaxed text-slate-400">
+        {t('actionsPanel.yourIntro')}
+      </p>
+      <p className="mb-4 max-w-3xl text-[11px] leading-relaxed text-slate-600">
+        {t('actionsPanel.yourPrivacy')}
+      </p>
+
+      <div className="max-w-3xl space-y-3.5">
+        {QUESTIONS.map((question) => {
+          const text = questionText(question.id, locale);
+          return (
+            <fieldset key={question.id}>
+              <legend className="mb-1.5 text-xs text-slate-300">{text.prompt}</legend>
+              <div className="flex flex-wrap gap-1.5">
+                {question.options.map((option) => {
+                  const active = answers[question.id] === option;
+                  return (
+                    <button
+                      key={option}
+                      onClick={() => onAnswer(question.id, option)}
+                      aria-pressed={active}
+                      className={`rounded-md border px-2.5 py-1 text-[11px] transition ${
+                        active
+                          ? 'border-sky-400/40 bg-sky-500/15 text-sky-200'
+                          : 'border-white/10 text-slate-400 hover:border-white/20 hover:text-slate-200'
+                      }`}
+                    >
+                      {text.options[option]}
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+          );
+        })}
+      </div>
+
+      <div className="mt-3.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-slate-600">
+        <span className="font-mono tabular-nums">
+          {t('actionsPanel.yourProgress', {
+            answered: profile.answered,
+            total: QUESTIONS.length,
+          })}
+        </span>
+        {profile.answered > 0 && (
+          <button
+            onClick={onReset}
+            className="underline-offset-2 transition hover:text-slate-400 hover:underline"
+          >
+            {t('actionsPanel.yourReset')}
+          </button>
+        )}
+        {!complete && <span>{t('actionsPanel.yourIncomplete')}</span>}
+      </div>
+
+      {complete && (
+        <div className="mt-5 rounded-lg border border-white/10 bg-white/[0.02] px-4 py-4">
+          <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+            {/* Lo zero non prende il rosso d'allarme: chi non ha piu niente da
+                tirare non va sgridato con il colore. Stessa logica del layer
+                delle emissioni, dove il verso opposto esce dalla rampa. */}
+            <span
+              className="font-mono text-5xl font-bold leading-none tracking-tight"
+              style={{ color: profile.total > 0 ? BAR_COLOR : NOTHING_LEFT_COLOR }}
+            >
+              {decimal(profile.total)}
+            </span>
+            <span className="text-sm text-slate-300">{t('actionsPanel.yourUnit')}</span>
+            <span className="text-xs text-slate-500">{t('actionsPanel.yourTotalLabel')}</span>
+          </div>
+          {profile.total === 0 && (
+            <p className="mt-2 max-w-3xl text-xs leading-relaxed text-slate-300">
+              {emphasise(t('actionsPanel.yourNothingLeft'))}
+            </p>
+          )}
+          <p className="mt-2 max-w-3xl text-xs leading-relaxed text-slate-400">
+            {t('actionsPanel.yourCompare', {
+              fair: decimal(REFERENCES.fairShare),
+              world: decimal(REFERENCES.worldPerCapita),
+              year: REFERENCES.worldYear,
+            })}
+          </p>
+          {/* Le barre qui sotto sono lunghe quanto quelle della classifica, e
+              portano lo stesso trattino: senza dirlo, un trattino verticale in
+              mezzo a una barra non spiega niente. */}
+          {numeric.length > 0 && (
+            <p className="mt-2 flex items-center gap-1.5 text-[11px] text-slate-500">
+              <span className="h-3 w-px bg-white/40" />
+              {t('actionsPanel.refFairShare')} · {decimal(REFERENCES.fairShare)}{' '}
+              {t('actionsPanel.savesUnit')}
+            </p>
+          )}
+          {top && top.tonnes !== null && profile.total > 0 && (
+            <p className="mt-1.5 max-w-3xl text-xs leading-relaxed text-slate-300">
+              {emphasise(
+                t('actionsPanel.yourTopLine', {
+                  name: leverText(top.id, locale).name,
+                  share: Math.round((top.tonnes / profile.total) * 100),
+                }),
+              )}
+            </p>
+          )}
+
+          <div className="mt-4 space-y-3">
+            {profile.levers.map((lever) => {
+              const text = leverText(lever.id, locale);
+              return (
+                <article key={lever.id}>
+                  <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                    <span className="text-sm text-slate-100">{text.name}</span>
+                    {lever.tonnes === null ? (
+                      <span className="ml-auto shrink-0 text-[10px] uppercase tracking-wider text-slate-500">
+                        {t('actionsPanel.yourNoNumber')}
+                      </span>
+                    ) : (
+                      <>
+                        <span className="ml-auto shrink-0 font-mono text-sm font-semibold tabular-nums text-white">
+                          {decimal(lever.tonnes, lever.tonnes < 1 ? 2 : 1)}
+                        </span>
+                        <span className="shrink-0 text-[10px] text-slate-600">
+                          {t('actionsPanel.savesUnit')}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  {/* La leva senza numero non prende una barra lunga zero, che
+                      si leggerebbe come «non vale niente»: prende un filo
+                      verticale, che è un'altra cosa. */}
+                  {lever.tonnes === null ? (
+                    <div
+                      className="mt-1 h-1.5 border-l-2 border-dashed border-white/25"
+                      aria-hidden
+                    />
+                  ) : (
+                    <div className="relative mt-1 h-1.5 overflow-hidden rounded-full bg-white/[0.06]">
+                      <div
+                        className="absolute inset-y-0 left-0 rounded-r-[3px]"
+                        style={{
+                          width: `max(2px, ${pct(lever.tonnes)}%)`,
+                          background: BAR_COLOR,
+                        }}
+                      />
+                      <div
+                        className="absolute inset-y-0 w-px bg-white/40"
+                        style={{ left: `${pct(REFERENCES.fairShare)}%` }}
+                        aria-hidden
+                      />
+                    </div>
+                  )}
+                  <p className="mt-1.5 max-w-3xl text-[11px] leading-relaxed text-slate-500">
+                    {text.note}
+                  </p>
+                </article>
+              );
+            })}
+          </div>
+
+          {profile.missing.length > 0 && (
+            <div className="mt-5 border-t border-white/5 pt-3.5">
+              <h4 className="text-[10px] font-medium uppercase tracking-wider text-slate-500">
+                {t('actionsPanel.yourMissingHeading')}
+              </h4>
+              <ul className="mt-2 space-y-1.5">
+                {profile.missing.map((m) => {
+                  const line = missingText(m.id, m.reason, locale);
+                  return line ? (
+                    <li
+                      key={`${m.id}-${m.reason}`}
+                      className="text-[11px] leading-relaxed text-slate-500"
+                    >
+                      {line}
+                    </li>
+                  ) : null;
+                })}
+              </ul>
+            </div>
+          )}
+
+          <p className="mt-4 max-w-3xl border-t border-white/5 pt-3 text-[11px] leading-relaxed text-slate-500">
+            {emphasise(t('actionsPanel.yourCaveat'))}{' '}
+            {t('actionsPanel.yourTopTen', { total: decimal(FOOTPRINT_SOURCE.topTenTotal) })}
+          </p>
+          <p className="mt-2 text-[10px] text-slate-600">
+            <a
+              href={FOOTPRINT_SOURCE.primaryUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 transition hover:text-slate-400"
+            >
+              {FOOTPRINT_SOURCE.primary}
+              <ExternalLink className="h-2.5 w-2.5" />
+            </a>
+          </p>
+        </div>
+      )}
+    </section>
+  );
+}
+
 function ActionRow({
   action,
   locale,
   decimal,
+  excluded,
 }: {
   action: ClimateAction;
   locale: Locale;
   decimal: (v: number, digits?: number) => string;
+  /** Perché il profilo esclude questa riga, o `undefined` se ti riguarda. */
+  excluded?: MissingReason;
 }) {
   const { t } = useI18n();
   const text = actionText(action.id, locale);
   const pct = (v: number) => (v / REFERENCES.worldPerCapita) * 100;
 
   return (
-    <article>
+    // Spenta, non nascosta: che vivere senza auto valga 2,4 t resta vero anche
+    // per chi l'auto non ce l'ha, e toglierle la riga gliela nasconderebbe.
+    <article className={excluded ? 'opacity-40' : undefined}>
       <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
         <span className="text-sm text-slate-100">{text.name}</span>
+        {excluded && (
+          <span className="rounded-full border border-white/15 px-1.5 py-0.5 text-[10px] text-slate-400">
+            {t(
+              excluded === 'alreadyDone'
+                ? 'actionsPanel.badgeAlreadyDone'
+                : 'actionsPanel.badgeNotApplicable',
+            )}
+          </span>
+        )}
         {action.advised && (
           <span
             className="rounded-full px-1.5 py-0.5 text-[10px]"

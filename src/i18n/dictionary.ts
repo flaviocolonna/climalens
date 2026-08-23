@@ -55,6 +55,9 @@ export interface Dictionary {
     whoCauses: string;
     beyondCo2: string;
     whoCopes: string;
+    whoDelivers: string;
+    fixedYear: string;
+    backToAnomaly: string;
     loadingCountries: string;
     generateFileHint: string;
     metaLine: string;
@@ -156,6 +159,24 @@ export interface Dictionary {
     foodLandLabel: string;
     foodLoading: string;
     foodUnavailable: string;
+    yourHeading: string;
+    yourIntro: string;
+    yourPrivacy: string;
+    yourIncomplete: string;
+    yourProgress: string;
+    yourReset: string;
+    yourTotalLabel: string;
+    yourUnit: string;
+    yourCompare: string;
+    yourTopLine: string;
+    yourMissingHeading: string;
+    yourCaveat: string;
+    yourTopTen: string;
+    yourNoNumber: string;
+    yourNothingLeft: string;
+    badgeNotApplicable: string;
+    badgeAlreadyDone: string;
+    rankingProfileNote: string;
   };
   futurePanel: {
     navShort: string;
