@@ -23,27 +23,12 @@ import { loadFood, type FoodData } from '@/lib/food';
 import { STAGE_COLORS, foodName, stageName } from '@/i18n/content/food';
 import { actionText, multiplierText } from '@/i18n/content/actions';
 import { leverText, missingText, questionText } from '@/i18n/content/footprint';
+import { emphasise } from '@/components/emphasise';
 import { useI18n } from '@/i18n/LocaleProvider';
 import { LOCALE_TAG, type Locale } from '@/i18n/locale';
 
 /** Le azioni usano il rosso della mappa: è sempre CO₂, solo dalla parte di chi la evita. */
 const BAR_COLOR = '#bf2621';
-/**
- * Il grassetto dentro una stringa tradotta: le traduzioni hanno bisogno di
- * poter spostare l'enfasi dove la loro sintassi la mette, e spezzare la frase
- * in tre chiavi lo impedirebbe. Marcatore minimo, nessun HTML in ingresso.
- */
-function emphasise(text: string): React.ReactNode {
-  return text.split(/\*\*(.+?)\*\*/g).map((part, i) =>
-    i % 2 === 1 ? (
-      <strong key={i} className="font-medium text-white">
-        {part}
-      </strong>
-    ) : (
-      part
-    ),
-  );
-}
 
 /** Le raccomandate, per distinguerle senza affidarsi al solo colore. */
 const ADVISED_COLOR = '#8560c6';

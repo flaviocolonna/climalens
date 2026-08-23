@@ -1,4 +1,4 @@
-import { BookOpen, Factory, Globe, Globe2, Sparkles, TrendingUp } from 'lucide-react';
+import { BookOpen, Factory, Globe, Globe2, Sparkles, TrendingUp, Waves } from 'lucide-react';
 import { SearchBar } from '@/components/SearchBar';
 import type { Place } from '@/lib/openMeteo';
 import { useI18n } from '@/i18n/LocaleProvider';
@@ -69,6 +69,13 @@ export function NavBar({ years, onSelectPlace, panel, onTogglePanel }: Props) {
         short={t('futurePanel.navShort')}
       />
       <PanelButton
+        active={panel === 'consequences'}
+        onClick={() => onTogglePanel('consequences')}
+        icon={Waves}
+        long={t('consequences.navLong')}
+        short={t('consequences.navShort')}
+      />
+      <PanelButton
         active={panel === 'knowledge'}
         onClick={() => onTogglePanel('knowledge')}
         icon={BookOpen}
@@ -96,6 +103,10 @@ function PanelButton({
     <button
       onClick={onClick}
       aria-expanded={active}
+      // Sotto lg il pulsante è solo un'icona: senza un nome accessibile
+      // sarebbe un bottone muto per chi usa uno screen reader.
+      aria-label={long}
+      title={long}
       className={`flex shrink-0 items-center gap-2 rounded-lg border px-3 py-2 text-xs font-medium transition ${
         active
           ? 'border-sky-400/40 bg-sky-500/15 text-sky-200'
@@ -103,9 +114,14 @@ function PanelButton({
       }`}
     >
       <Icon className={`h-4 w-4 shrink-0 ${active ? 'text-sky-300' : 'text-slate-400'}`} />
-      {/* Sotto lg le due voci starebbero strette: resta l'etichetta corta. */}
-      <span className="hidden xl:inline">{long}</span>
-      <span className="xl:hidden">{short}</span>
+      {/* Tre livelli, e le soglie sono misurate, non scelte a occhio: con sei
+          voci le etichette lunghe stanno solo oltre i 1536px, e sotto i 1280
+          nemmeno quelle corte — a quel punto il campo di ricerca, che è l'unico
+          elemento che può restringersi, veniva schiacciato a zero. Sotto xl
+          restano le sole icone, e il nome se lo prendono `title` e
+          `aria-label`. */}
+      <span className="hidden 2xl:inline">{long}</span>
+      <span className="hidden xl:inline 2xl:hidden">{short}</span>
     </button>
   );
 }

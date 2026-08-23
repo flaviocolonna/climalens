@@ -13,7 +13,7 @@ dozen other open sources named where they are used.
 
 ## Start here: the tour
 
-The app grew to five full-screen panels, fourteen map metrics and a location panel
+The app grew to six full-screen panels, fourteen map metrics and a location panel
 with eight sections. Content stopped being the bottleneck a while ago; the
 bottleneck is that someone arriving sees a map and five buttons with no idea
 what order to read them in.
@@ -378,6 +378,93 @@ The tab row is now two rows of a six-column grid, and the split is not cosmetic.
 Above, the three that describe **the state of the world** — what happens here, who
 caused it, what is in the air. Below, the two that describe **how countries
 respond** — who can cope and who is doing what they said.
+
+## What it does
+
+Everything else in this app measures the **cause**: who emits, who emitted, who
+promises, who delivers, what you can take off. The map says it is warming and
+never says what the warming does. This is the missing half, and it answers two
+different objections with two different halves.
+
+### The rising sea
+
+For anyone who files it under 2100. It has been rising for a century, it is
+measured, and it accelerates: **1.3 mm a year** over 1901-1971, **1.9** over
+1971-2006, **3.7** over 2006-2018. Twenty centimetres between 1901 and 2018, and
+no century had seen as much in the past three thousand years.
+
+The observed curve is drawn from [NOAA Climate.gov via OWID](https://ourworldindata.org/grapher/sea-level)
+— quarterly since 1880, averaged into years by the build script. Averaged, not
+sampled: sea level has a seasonal cycle, and always picking the same quarter
+would leave it inside the series looking like trend. Years covered by fewer than
+three quarters are dropped for the same reason.
+
+The 2100 projections are **not** in the pipeline. A projection is not a series to
+download, it is a row in a report, so the five SSP figures sit as named constants
+in `src/lib/consequences.ts` — exactly as the temperature scenarios already do.
+They come from IPCC AR6 WGI, and they carry a **third baseline**: the map's
+anomalies are against 1951-1980, the temperature scenarios against 1850-1900,
+these against 1995-2014. Three different zeros in three panels, each writing its
+own next to it. 2150 is deliberately absent: those numbers could not be verified
+against the source at build time, and an unverified row is worse than a missing
+one.
+
+Then the part almost nobody knows, and the reason this section exists: **even if
+warming stops at 1.5 °C**, the sea keeps rising by 2-3 metres over the following
+two thousand years. The ocean answers for centuries to heat it has already
+absorbed. It is the one figure here that does not depend on any decision still
+open.
+
+### Who lives next to it
+
+Two World Bank indicators (CIESIN data, 2015): the share of **population** and
+the share of **land** below five metres of elevation. Two and not one, because
+they come apart — and where they come apart is the story. Guyana: 78.5% of the
+people on 5.2% of the land. The Marshall Islands: 68% of the people, 81.7% of the
+land, because the whole country is low.
+
+The bar is people; the pale tick is land. The first attempt drew land as a second
+bar behind the first, which looked richer and was worse: where low land is scarce
+and people are many — precisely the cases this section exists to show — the back
+bar vanished under the front one. A tick is always visible.
+
+### The days it has already happened
+
+For anyone who says there has always been bad weather. Attribution science
+answers with a number: how many times more likely *that particular day* became.
+Twelve events, each with the study that measured it, and each row opens its place
+on the map — the map then flies there on its own.
+
+**They are written by hand, and that is a licence decision.** The full list exists
+and is excellent: [Carbon Brief](https://interactive.carbonbrief.org/attribution-studies/index.html)
+maintains a public database of nearly a thousand studies. It is published under
+CC BY-NC-ND, and ND means no reworked version may be redistributed. So their
+collection is used here as an **index for reaching the primary studies**, which
+are the real source of every row, and the panel points readers to their map for
+the whole thing. Same call as the Climate Action Tracker in the pledges layer: if
+the licence does not permit redistribution, it does not get redistributed.
+
+The twelve were chosen on three criteria: the study gives a **number** rather than
+an impression; the event types differ; and the geography is not all European and
+North American. Japan 2018 is in there on purpose with its modest **+7%** — among
+multipliers of 30 and 600, one row has to remember that attribution does not
+always answer big, and says so when it answers small.
+
+### Where the research looks
+
+The most uncomfortable block, and the reason the study counts are shown at all.
+Of the studies on that public list, roughly three quarters conclude the warming
+made the event more likely or more intense — but a few dozen find no discernible
+influence and a few dozen find it in the opposite direction, and all four
+categories are printed. Showing only the first would be the most elegant way to
+lie with true data.
+
+Then the counts by region, which are **not** a map of where extremes happen but a
+map of where they get studied: Europe has twenty times more of them than northern
+Africa. The least-studied countries are almost always the ones the "who copes" tab
+shows least equipped to cope — which is why that sentence sits here rather than in
+a footnote. The counts are ours, taken from their public list, and the panel says
+so instead of borrowing their authority for a number they did not publish.
 
 ## Why it warms this much here
 
@@ -804,6 +891,7 @@ puts it in the bundle.
 | `npm run data:food` | only the food footprints |
 | `npm run data:adaptation` | only the ND-GAIN adaptation index |
 | `npm run data:pledges` | only the net-zero pledges and the trajectory gap |
+| `npm run data:consequences` | only the sea level series and coastal exposure |
 | `npm run build` | production build |
 | `npm run lint` | typecheck |
 
@@ -872,6 +960,10 @@ no ISO code in the emissions table.
 - [Poore & Nemecek, Science 2018](https://ourworldindata.org/food-choice-vs-eating-local) — food footprints by stage
 - [ND-GAIN Country Index](https://gain.nd.edu/our-work/country-index/) — vulnerability and readiness to adapt
 - [Net Zero Tracker](https://ourworldindata.org/grapher/net-zero-targets), via OWID — status and target year of each country’s net-zero commitment
+- [NOAA Climate.gov](https://ourworldindata.org/grapher/sea-level), via OWID — global mean sea level since 1880
+- [World Bank · CIESIN](https://data.worldbank.org/indicator/EN.POP.EL5M.ZS) — population and land below five metres of elevation
+- [World Weather Attribution](https://www.worldweatherattribution.org/) and the individual papers cited in the panel — attribution of specific extreme events
+- [Carbon Brief](https://interactive.carbonbrief.org/attribution-studies/index.html) — the full attribution database, cited but not redistributed (CC BY-NC-ND)
 - [Richardson et al., Science Advances 2023](https://www.science.org/doi/10.1126/sciadv.adh2458) — the nine planetary boundaries
 - [Planetary Health Check 2025](https://www.planetaryhealthcheck.org/) — boundary status (PIK)
 - [Carbon Majors](https://carbonmajors.org/) — emissions by fossil and cement producer (InfluenceMap)

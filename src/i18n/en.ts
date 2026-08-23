@@ -257,6 +257,45 @@ export const en = {
     methodIntro:
       'Every panel in this app declares, in small print, the convention it is using. Here they are spelled out: they are the traps almost everything you read falls into, and also the way to check whether this app fell into them.',
   },
+  consequences: {
+    navShort: 'Effects',
+    navLong: 'What it does',
+    heading: 'What the warming does',
+    subheading: 'The rising sea, and the days it has already happened',
+    close: 'Close',
+    loading: 'Loading the measurements…',
+    unavailable: 'Consequence data unavailable. Generate it with',
+    seaHeading: 'The rising sea',
+    seaIntro:
+      'Not a matter for 2100: between 1901 and 2018 mean sea level rose by **{cm} centimetres**, and no century had seen as much in the past {years} years.',
+    seaChartNote: 'Global mean level {from}–{to}, in millimetres against the {baseline} average.',
+    seaChartAria: 'Global mean sea level from 1880 to today: a curve that rises and accelerates.',
+    ratesHeading: 'And it is accelerating',
+    ratesUnit: 'mm a year',
+    projectionHeading: 'Where it gets to by 2100',
+    projectionIntro:
+      'Median and likely range for each scenario, in metres against the {baseline} average. That is a third baseline, different from the map’s and from the temperature scenarios’: it is written here on purpose.',
+    metres: 'm',
+    commitment:
+      'The part that is not up for negotiation: **even if warming stops at {degrees} °C**, the sea would keep rising by {low}-{high} metres over the following {years} years. The ocean answers for centuries to heat it has already absorbed.',
+    exposureHeading: 'Who lives next to it',
+    exposureIntro:
+      'The share of the population living below five metres of elevation. The pale tick is the share of **land** that sits down there: where it falls far to the left of the bar, a whole country is packed onto its low strip.',
+    exposurePeople: 'population',
+    exposureLand: 'land area',
+    exposureNote: 'Data {year} · {coverage} countries ·',
+    eventsHeading: 'The days it has already happened',
+    eventsIntro:
+      '"There has always been bad weather" has a precise answer, and it is not "the climate changes": it is **how many times more likely** that particular day became. Twelve events, each with the study that measured it.',
+    readStudy: 'Read the study',
+    eventsClickHint: 'Each row opens its place on the map.',
+    researchHeading: 'Where the research looks',
+    researchIntro:
+      'Carbon Brief’s public list holds **{total} studies** of events and trends: {moreLikely} conclude that warming made the event more likely or more intense, {noInfluence} find no discernible influence, {lessLikely} find it in the opposite direction.',
+    researchGap:
+      'But this is not a map of where extremes happen: it is a map of **where they get studied**. Europe has twenty times more of them than northern Africa, and the least-studied countries are almost always the ones the "who copes" tab shows least equipped to cope.',
+    researchNote: 'Counts are ours, taken from the public list, {counted}. The full collection is by',
+  },
   producers: {
     tab: 'Who extracts it',
     heading: 'Who pulls the carbon out',

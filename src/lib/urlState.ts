@@ -22,9 +22,22 @@ import { DICTIONARIES } from '@/i18n/dictionaries';
 import { translate } from '@/i18n/t';
 
 /** I pannelli a tutto schermo: se ne apre uno per volta, e l'URL se lo ricorda. */
-export type PanelId = 'sectors' | 'boundaries' | 'actions' | 'future' | 'knowledge';
+export type PanelId =
+  | 'sectors'
+  | 'boundaries'
+  | 'actions'
+  | 'future'
+  | 'knowledge'
+  | 'consequences';
 
-const PANEL_IDS: PanelId[] = ['sectors', 'boundaries', 'actions', 'future', 'knowledge'];
+const PANEL_IDS: PanelId[] = [
+  'sectors',
+  'boundaries',
+  'actions',
+  'future',
+  'knowledge',
+  'consequences',
+];
 
 export interface UrlState {
   year: number | null;

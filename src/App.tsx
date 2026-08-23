@@ -5,6 +5,7 @@ import { LayerControls } from '@/components/LayerControls';
 import { NavBar } from '@/components/NavBar';
 import { ActionsPanel } from '@/components/ActionsPanel';
 import { BoundariesPanel } from '@/components/BoundariesPanel';
+import { ConsequencesPanel } from '@/components/ConsequencesPanel';
 import { KnowledgePanel } from '@/components/KnowledgePanel';
 import { Tour } from '@/components/Tour';
 import { FuturePanel } from '@/components/FuturePanel';
@@ -26,6 +27,8 @@ import { placeSubtitle } from '@/lib/format';
 import type { Place } from '@/lib/openMeteo';
 import { readUrlState, writeUrlState, type PanelId } from '@/lib/urlState';
 import { TOUR_STEPS, type TourStep } from '@/lib/tour';
+import type { AttributedEvent } from '@/lib/consequences';
+import { eventText } from '@/i18n/content/consequences';
 import type { SelectedPlace } from '@/types';
 import { useI18n } from '@/i18n/LocaleProvider';
 
@@ -253,6 +256,26 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey);
   }, [grid, year, panel, tourStep, metric]);
 
+  /**
+   * Un evento attribuito è un luogo: cliccarlo chiude la schermata e apre il
+   * punto sulla mappa, che poi ci vola sopra da sola. È il solo modo di far
+   * atterrare un elenco su un posto invece di lasciarlo una lista di nomi.
+   */
+  const openEvent = useCallback(
+    (event: AttributedEvent) => {
+      const text = eventText(event.id, locale);
+      setPanel(null);
+      setPlace({
+        key: `event-${event.id}`,
+        name: text.place,
+        subtitle: `${text.what} (${event.year})`,
+        latitude: event.lat,
+        longitude: event.lon,
+      });
+    },
+    [locale],
+  );
+
   const marker = useMemo(
     () => (place ? { latitude: place.latitude, longitude: place.longitude, label: place.name } : null),
     [place],
@@ -403,6 +426,9 @@ export default function App() {
       {panel === 'sectors' && <SectorsPanel onClose={() => setPanel(null)} />}
       {panel === 'boundaries' && <BoundariesPanel onClose={() => setPanel(null)} />}
       {panel === 'actions' && <ActionsPanel onClose={() => setPanel(null)} />}
+      {panel === 'consequences' && (
+        <ConsequencesPanel onClose={() => setPanel(null)} onOpenEvent={openEvent} />
+      )}
       {panel === 'future' && <FuturePanel onClose={() => setPanel(null)} />}
       {panel === 'knowledge' && <KnowledgePanel onClose={() => setPanel(null)} />}
 

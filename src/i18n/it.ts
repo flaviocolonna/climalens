@@ -258,6 +258,45 @@ export const it = {
     methodIntro:
       'Ogni pannello di quest’app dichiara in piccolo la convenzione che sta usando. Qui sono spiegate per esteso: sono le trappole in cui cade quasi tutto quello che si legge in giro, ed è anche il modo per controllare se questa app ci è caduta.',
   },
+  consequences: {
+    navShort: 'Effetti',
+    navLong: 'Cosa fa',
+    heading: 'Cosa fa il riscaldamento',
+    subheading: 'Il mare che sale, e i giorni in cui è già successo',
+    close: 'Chiudi',
+    loading: 'Carico le misure…',
+    unavailable: 'Dati sulle conseguenze non disponibili. Generali con',
+    seaHeading: 'Il mare che sale',
+    seaIntro:
+      'Non è una faccenda del 2100: fra il 1901 e il 2018 il livello medio del mare è salito di **{cm} centimetri**, e nessun secolo ne aveva visto altrettanto negli ultimi {years} anni.',
+    seaChartNote: 'Livello medio globale {from}–{to}, in millimetri rispetto alla media {baseline}.',
+    seaChartAria: 'Livello medio globale del mare dal 1880 a oggi: una curva che sale e accelera.',
+    ratesHeading: 'E accelera',
+    ratesUnit: 'mm all’anno',
+    projectionHeading: 'Dove arriva entro il 2100',
+    projectionIntro:
+      'Mediana e intervallo probabile per ciascuno scenario, in metri rispetto alla media {baseline}. È una terza base di riferimento, diversa da quelle della mappa e degli scenari di temperatura: sta scritta qui accanto apposta.',
+    metres: 'm',
+    commitment:
+      'La parte che non si negozia: **anche fermando il riscaldamento a {degrees} °C**, il mare continuerebbe a salire di {low}-{high} metri nei {years} anni successivi. L’oceano risponde per secoli a un calore che ha già assorbito.',
+    exposureHeading: 'Chi ci vive accanto',
+    exposureIntro:
+      'La quota di popolazione che vive sotto i cinque metri di quota. La tacca chiara è la quota di **superficie** che sta là sotto: dove cade molto a sinistra della barra, un paese intero è stipato sulla propria striscia bassa.',
+    exposurePeople: 'popolazione',
+    exposureLand: 'superficie',
+    exposureNote: 'Dati {year} · {coverage} paesi ·',
+    eventsHeading: 'I giorni in cui è già successo',
+    eventsIntro:
+      '«Il maltempo c’è sempre stato» ha una risposta precisa, e non è «il clima cambia»: è **quante volte più probabile** è diventato quel giorno lì. Dodici eventi, ognuno con lo studio che l’ha misurato.',
+    readStudy: 'Leggi lo studio',
+    eventsClickHint: 'Ogni riga apre il suo luogo sulla mappa.',
+    researchHeading: 'Dove guarda la ricerca',
+    researchIntro:
+      'Sull’elenco pubblico di Carbon Brief ci sono **{total} studi** su eventi e tendenze: {moreLikely} concludono che il riscaldamento ha reso l’evento più probabile o più intenso, {noInfluence} non trovano un’influenza distinguibile, {lessLikely} la trovano nel verso opposto.',
+    researchGap:
+      'Ma questa non è una mappa di dove succedono gli estremi: è una mappa di **dove si studiano**. L’Europa ne ha venti volte più dell’Africa settentrionale, e i paesi meno studiati sono quasi sempre quelli che la scheda «chi lo regge» mostra meno attrezzati a reggerlo.',
+    researchNote: 'Conteggi nostri sull’elenco pubblico, {counted}. La raccolta completa è di',
+  },
   producers: {
     tab: 'Chi le estrae',
     heading: 'Chi tira fuori il carbonio',

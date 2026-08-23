@@ -228,6 +228,38 @@ export interface Dictionary {
     methodHeading: string;
     methodIntro: string;
   };
+  consequences: {
+    navShort: string;
+    navLong: string;
+    heading: string;
+    subheading: string;
+    close: string;
+    loading: string;
+    unavailable: string;
+    seaHeading: string;
+    seaIntro: string;
+    seaChartNote: string;
+    seaChartAria: string;
+    ratesHeading: string;
+    ratesUnit: string;
+    projectionHeading: string;
+    projectionIntro: string;
+    metres: string;
+    commitment: string;
+    exposureHeading: string;
+    exposureIntro: string;
+    exposurePeople: string;
+    exposureLand: string;
+    exposureNote: string;
+    eventsHeading: string;
+    eventsIntro: string;
+    readStudy: string;
+    eventsClickHint: string;
+    researchHeading: string;
+    researchIntro: string;
+    researchGap: string;
+    researchNote: string;
+  };
   producers: {
     tab: string;
     heading: string;

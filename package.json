@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
-    "data": "npm run data:climate && npm run data:emissions && npm run data:pollution && npm run data:progress && npm run data:food && npm run data:adaptation && npm run data:pledges",
+    "data": "npm run data:climate && npm run data:emissions && npm run data:pollution && npm run data:progress && npm run data:food && npm run data:adaptation && npm run data:pledges && npm run data:consequences",
     "data:climate": "node scripts/build-climate-data.mjs",
     "data:emissions": "node scripts/build-emissions-data.mjs",
     "data:pollution": "node scripts/build-pollution-data.mjs",
@@ -16,7 +16,8 @@
     "test:filter": "node scripts/verify-discovery-filter.mjs",
     "data:food": "node scripts/build-food-data.mjs",
     "data:adaptation": "node scripts/build-adaptation-data.mjs",
-    "data:pledges": "node scripts/build-pledges-data.mjs"
+    "data:pledges": "node scripts/build-pledges-data.mjs",
+    "data:consequences": "node scripts/build-consequences-data.mjs"
   },
   "dependencies": {
     "@upstash/redis": "^1.38.2",

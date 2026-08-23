@@ -258,6 +258,45 @@ export const es = {
     methodIntro:
       'Cada panel de esta app declara en letra pequeña la convención que está usando. Aquí están explicadas por extenso: son las trampas en las que cae casi todo lo que se lee por ahí, y también la forma de comprobar si esta app ha caído en ellas.',
   },
+  consequences: {
+    navShort: 'Efectos',
+    navLong: 'Qué provoca',
+    heading: 'Qué provoca el calentamiento',
+    subheading: 'El mar que sube, y los días en que ya ha pasado',
+    close: 'Cerrar',
+    loading: 'Cargando las medidas…',
+    unavailable: 'Datos de consecuencias no disponibles. Genéralos con',
+    seaHeading: 'El mar que sube',
+    seaIntro:
+      'No es un asunto de 2100: entre 1901 y 2018 el nivel medio del mar subió **{cm} centímetros**, y ningún siglo había visto otro tanto en los últimos {years} años.',
+    seaChartNote: 'Nivel medio global {from}–{to}, en milímetros respecto a la media de {baseline}.',
+    seaChartAria: 'Nivel medio global del mar desde 1880 hasta hoy: una curva que sube y acelera.',
+    ratesHeading: 'Y acelera',
+    ratesUnit: 'mm al año',
+    projectionHeading: 'Adónde llega para 2100',
+    projectionIntro:
+      'Mediana e intervalo probable para cada escenario, en metros respecto a la media de {baseline}. Es una tercera base de referencia, distinta de la del mapa y de la de los escenarios de temperatura: está escrita aquí a propósito.',
+    metres: 'm',
+    commitment:
+      'La parte que no se negocia: **aunque el calentamiento se detenga en {degrees} °C**, el mar seguiría subiendo {low}-{high} metros durante los {years} años siguientes. El océano responde durante siglos a un calor que ya ha absorbido.',
+    exposureHeading: 'Quién vive al lado',
+    exposureIntro:
+      'La proporción de población que vive por debajo de los cinco metros de altitud. La marca clara es la proporción de **superficie** que está ahí abajo: donde cae muy a la izquierda de la barra, un país entero está apiñado en su franja baja.',
+    exposurePeople: 'población',
+    exposureLand: 'superficie',
+    exposureNote: 'Datos {year} · {coverage} países ·',
+    eventsHeading: 'Los días en que ya ha pasado',
+    eventsIntro:
+      '«Siempre ha habido mal tiempo» tiene una respuesta precisa, y no es «el clima cambia»: es **cuántas veces más probable** se volvió aquel día concreto. Doce eventos, cada uno con el estudio que lo midió.',
+    readStudy: 'Leer el estudio',
+    eventsClickHint: 'Cada fila abre su lugar en el mapa.',
+    researchHeading: 'Dónde mira la investigación',
+    researchIntro:
+      'En la lista pública de Carbon Brief hay **{total} estudios** sobre eventos y tendencias: {moreLikely} concluyen que el calentamiento hizo el evento más probable o más intenso, {noInfluence} no encuentran una influencia distinguible, {lessLikely} la encuentran en sentido contrario.',
+    researchGap:
+      'Pero este no es un mapa de dónde ocurren los extremos: es un mapa de **dónde se estudian**. Europa tiene veinte veces más que el norte de África, y los países menos estudiados son casi siempre los que la pestaña «quién aguanta» muestra peor equipados para aguantarlo.',
+    researchNote: 'Recuentos nuestros sobre la lista pública, {counted}. La recopilación completa es de',
+  },
   producers: {
     tab: 'Quién lo extrae',
     heading: 'Quién saca el carbono',
