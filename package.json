@@ -1,0 +1,37 @@
+{
+  "name": "climalens",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "tsc --noEmit",
+    "data": "npm run data:climate && npm run data:emissions && npm run data:pollution && npm run data:progress",
+    "data:climate": "node scripts/build-climate-data.mjs",
+    "data:emissions": "node scripts/build-emissions-data.mjs",
+    "data:pollution": "node scripts/build-pollution-data.mjs",
+    "data:progress": "node scripts/build-progress-data.mjs",
+    "test:filter": "node scripts/verify-discovery-filter.mjs"
+  },
+  "dependencies": {
+    "@upstash/redis": "^1.38.2",
+    "lucide-react": "^0.469.0",
+    "maplibre-gl": "^5.0.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "recharts": "^2.15.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7"
+  }
+}

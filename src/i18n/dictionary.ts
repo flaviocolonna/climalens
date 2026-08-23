@@ -1,0 +1,282 @@
+/**
+ * Shape of the flat UI-chrome strings, namespaced by feature area so it
+ * mirrors how the components themselves are split. Every entry is a plain
+ * string; `{name}` placeholders are filled in by `t()`'s interpolation.
+ *
+ * Dynamic, data-branching prose (warmingWhy's reasoning chain, AreaEmissions'
+ * article()-driven sentences) does NOT live here — see src/i18n/content/,
+ * whose shape is sentence-functions-of-numbers, not flat lookup.
+ */
+export interface Dictionary {
+  common: {
+    noData: string;
+  };
+  app: {
+    title: string;
+    dataErrorTitle: string;
+    loading: string;
+    hintIntro: string;
+    hintPressPrefix: string;
+    hintPressMid: string;
+    hintPressSuffix: string;
+    spaceKey: string;
+    placeFallback: string;
+    gridCellSubtitle: string;
+    unnamedPoint: string;
+  };
+  nav: {
+    tagline: string;
+    sectorsShort: string;
+    sectorsLong: string;
+    languageAria: string;
+  };
+  search: {
+    placeholderInline: string;
+    placeholderStandalone: string;
+    ariaLabel: string;
+    clearAria: string;
+    noResults: string;
+    searchFailed: string;
+  };
+  timeline: {
+    pause: string;
+    play: string;
+    yearLabel: string;
+    selectYearAria: string;
+    globalMeanLabel: string;
+  };
+  legend: {
+    title: string;
+    subtitle: string;
+    mapAriaLabel: string;
+  };
+  layerControls: {
+    whoSuffers: string;
+    whoCauses: string;
+    beyondCo2: string;
+    loadingCountries: string;
+    generateFileHint: string;
+    metaLine: string;
+  };
+  locationPanel: {
+    closeAria: string;
+    noInstrumentalData: string;
+    warmingBetween: string;
+    anomalyInYear: string;
+    trend: string;
+    annualAnomalyHeading: string;
+    chartFootnote: string;
+    avgAnnualTempHeading: string;
+    loadingEra5: string;
+    era5RateLimited: string;
+    era5Unavailable: string;
+    era5SeriesUnavailable: string;
+    footer: string;
+    feltDaysHeading: string;
+    feltDaysFootnote: string;
+    indicatorHotDay: string;
+    indicatorTropicalNight: string;
+    indicatorFrost: string;
+    lifetimeHeading: string;
+    lifetimeLabel: string;
+    lifetimeWarming: string;
+    lifetimeHottest: string;
+    lifetimeCaption: string;
+    lifetimeNoData: string;
+  };
+  airQuality: {
+    heading: string;
+    loading: string;
+    unavailable: string;
+    noAnnualSeries: string;
+    unit: string;
+    timesGuideline: string;
+    annualCaption: string;
+    daysOverLabel: string;
+    nowLabel: string;
+    aqi: string;
+    footnote: string;
+  };
+  boundaries: {
+    navShort: string;
+    navLong: string;
+    heading: string;
+    subheading: string;
+    close: string;
+    crossedOf: string;
+    crossedCaption: string;
+    statusCrossed: string;
+    statusSafe: string;
+    boundaryLabel: string;
+    currentLabel: string;
+    controlVariable: string;
+    safeZone: string;
+    riskZone: string;
+    noQuantified: string;
+    footnote: string;
+    sourceValues: string;
+    sourceStatus: string;
+  };
+  actionsPanel: {
+    navShort: string;
+    navLong: string;
+    heading: string;
+    subheading: string;
+    close: string;
+    rankingHeading: string;
+    rankingIntro: string;
+    advisedBadge: string;
+    savesUnit: string;
+    refWorld: string;
+    refFairShare: string;
+    excludedHeading: string;
+    excludedBody: string;
+    contextHeading: string;
+    contextBody: string;
+    multipliersHeading: string;
+    multipliersIntro: string;
+    handoffHeading: string;
+    handoffBody: string;
+    sourceNote: string;
+    budgetHeading: string;
+    budgetYears: string;
+    budgetCaption: string;
+    budgetStrict: string;
+    supportHeading: string;
+    supportIntro: string;
+    supportWilling: string;
+    supportNorms: string;
+    supportDemands: string;
+    supportGap: string;
+  };
+  futurePanel: {
+    navShort: string;
+    navLong: string;
+    heading: string;
+    subheading: string;
+    close: string;
+    scenariosHeading: string;
+    scenariosIntro: string;
+    scenariosBaseline: string;
+    scenariosInterpolated: string;
+    scenarioSsp119: string;
+    scenarioSsp126: string;
+    scenarioSsp245: string;
+    scenarioSsp370: string;
+    scenarioSsp585: string;
+    workingHeading: string;
+    workingIntro: string;
+    solarHeadline: string;
+    solarCaption: string;
+    capacityLine: string;
+    shareLine: string;
+    lcoeHeading: string;
+    lcoeCaption: string;
+    lcoeRose: string;
+    lcoeSolar: string;
+    lcoeOnshore: string;
+    lcoeOffshore: string;
+    lcoeHydro: string;
+    lcoeGeothermal: string;
+    loading: string;
+    unavailable: string;
+  };
+  producers: {
+    tab: string;
+    heading: string;
+    intro: string;
+    tracedLine: string;
+    halfLine: string;
+    stateBadge: string;
+    investorBadge: string;
+    brandsHeading: string;
+    brandsIntro: string;
+    brandsLeaderLine: string;
+    brandsMethod: string;
+    brandsAuditLine: string;
+    copiedByHand: string;
+  };
+  warmingWhy: {
+    heading: string;
+    bandMissingNote: string;
+    footerNote: string;
+  };
+  areaEmissions: {
+    heading: string;
+    notAvailable: string;
+    loadingCountries: string;
+    badgeFromSearch: string;
+    badgeInside: string;
+    badgeNearest: string;
+    nearestNote: string;
+    contributionNoPoint: string;
+    contributionWithPoint: string;
+    perCapitaLabel: string;
+    perCapitaValue: string;
+    netValue: string;
+    perCapitaExtra: string;
+    perCapitaWhy: string;
+    historicalLabel: string;
+    historicalExtra: string;
+    historicalWhy: string;
+    netLabel: string;
+    netBalanced: string;
+    netImports: string;
+    netExports: string;
+    netWhyImports: string;
+    netWhyExports: string;
+    sourceHeading: string;
+    whyMuchHeading: string;
+    footerPrefix: string;
+    footerSuffix: string;
+    energyNoIdentity: string;
+    unnamedCountryFallback: string;
+    offshoreAntarcticaMain: string;
+    offshoreAntarcticaNote: string;
+    offshoreSeaMain: string;
+    offshoreSeaNote: string;
+    unlistedMain: string;
+    unlistedNote: string;
+  };
+  sectorsPanel: {
+    heading: string;
+    subheading: string;
+    close: string;
+    totalCaption: string;
+    totalCaptionSource: string;
+    totalCaptionDemand: string;
+    sourceFootnote: string;
+    demandFootnote: string;
+    tabSource: string;
+    tabDemand: string;
+    highlightPrefix: string;
+    highlightReset: string;
+    sectorsHeading: string;
+    demandWarningPrefix: string;
+    demandWarningEmphasis: string;
+    demandWarningSuffix: string;
+    revealLink: string;
+    totalBarAriaLabel: string;
+  };
+  projectsPanel: {
+    heading: string;
+    intro: string;
+    searchButton: string;
+    loadingPrefix: string;
+    loadingHint: string;
+    retry: string;
+    noProjects: string;
+    source: string;
+    howToParticipate: string;
+    evidenceExact: string;
+    evidenceDomain: string;
+    evidenceDomainTitle: string;
+    sourcesConsulted: { one: string; other: string };
+    droppedUnverified: { one: string; other: string };
+    droppedReason: string;
+    cached: string;
+    refresh: string;
+    searchFailed: string;
+    invalidResponse: string;
+  };
+}
