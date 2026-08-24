@@ -30,6 +30,20 @@ export interface Dictionary {
     sectorsLong: string;
     languageAria: string;
   };
+  welcome: {
+    heading: string;
+    lead: string;
+    placeTitle: string;
+    placeBody: string;
+    layersTitle: string;
+    layersBody: string;
+    panelsTitle: string;
+    panelsBody: string;
+    promise: string;
+    takeTour: string;
+    explore: string;
+    reopen: string;
+  };
   search: {
     placeholderInline: string;
     placeholderStandalone: string;

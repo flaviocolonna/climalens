@@ -9,6 +9,8 @@ interface Props {
   /** "1880–2025", già formattato: la barra non conosce la griglia. */
   years: string;
   onSelectPlace: (place: Place) => void;
+  /** Riapre la presentazione: chi l'ha chiusa di fretta deve poterla ritrovare. */
+  onAbout: () => void;
   /** Il pannello a tutto schermo aperto, se ce n'è uno: sono alternativi. */
   panel: PanelId | null;
   onTogglePanel: (panel: PanelId) => void;
@@ -20,19 +22,30 @@ interface Props {
  * `relative z-30` non è decorativo: il menu a tendina della ricerca esce dalla
  * barra e deve passare sopra i pannelli che vengono dopo nel DOM.
  */
-export function NavBar({ years, onSelectPlace, panel, onTogglePanel }: Props) {
+export function NavBar({ years, onSelectPlace, onAbout, panel, onTogglePanel }: Props) {
   const { t } = useI18n();
   return (
     <nav className="pointer-events-auto relative z-30 flex items-center gap-3 rounded-xl border border-white/10 bg-ink-900/80 px-3 py-2.5 shadow-2xl backdrop-blur-md sm:px-4">
-      <div className="flex shrink-0 items-center gap-2.5">
-        <Globe2 className="h-5 w-5 shrink-0 text-sky-400" />
-        <div className="hidden sm:block">
-          <h1 className="text-sm font-semibold leading-tight text-white">ClimaLens</h1>
-          <p className="text-[11px] leading-tight text-slate-400">
-            {t('nav.tagline', { years })}
-          </p>
-        </div>
-      </div>
+      {/* Il nome è un pulsante, ed è l'unica via di ritorno alla schermata di
+          benvenuto: quella si mostra una volta sola, e senza un modo di
+          riaprirla chi la chiude per sbaglio perde la spiegazione per sempre.
+          Il pulsante sta *dentro* l'h1 e non attorno: un h1 dentro un button
+          non è HTML valido, il contrario sì. */}
+      <h1 className="shrink-0">
+        <button
+          onClick={onAbout}
+          title={t('welcome.reopen')}
+          className="flex items-center gap-2.5 rounded-lg px-1.5 py-1 transition hover:bg-white/5"
+        >
+          <Globe2 className="h-5 w-5 shrink-0 text-sky-400" />
+          <span className="hidden text-left sm:block">
+            <span className="block text-sm font-semibold leading-tight text-white">ClimaLens</span>
+            <span className="block text-[11px] font-normal leading-tight text-slate-400">
+              {t('nav.tagline', { years })}
+            </span>
+          </span>
+        </button>
+      </h1>
 
       <div className="min-w-0 flex-1 sm:ml-2 sm:max-w-sm">
         <SearchBar onSelect={onSelectPlace} inline />

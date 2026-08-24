@@ -23,6 +23,24 @@ export const es = {
     sectorsLong: 'Quién calienta el planeta',
     languageAria: 'Cambiar idioma',
   },
+  welcome: {
+    heading: 'Qué es ClimaLens',
+    lead: 'Un mapa del clima que no se queda en la temperatura. Ciento cuarenta y seis años de medidas para cada punto del planeta, y cinco preguntas distintas sobre el mismo mapa: qué pasa aquí, quién lo causó, qué se respira, quién puede aguantarlo, quién está haciendo lo que dijo.',
+    placeTitle: 'Busca un lugar, o haz clic en cualquier punto',
+    placeBody:
+      'Cuánto se ha calentado ahí, cuántos días más por encima de 30 °C hay hoy, qué aire se respira. Escribe tu año de nacimiento y verás cuánto pasó mientras estabas.',
+    layersTitle: 'Cámbiale la pregunta al mapa',
+    layersBody:
+      'Las pestañas de abajo a la izquierda pintan el mismo mapa de cinco maneras. Las dos primeras apenas se parecen, y ese es el punto: quién calentó y quién se calienta son dos listas distintas.',
+    panelsTitle: 'Seis lecturas más a fondo arriba',
+    panelsBody:
+      'De los sectores que calientan el planeta a lo que puedes hacer tú, del mar que sube a cómo sabemos todo esto.',
+    promise:
+      'Cada número lleva al lado su fuente y su año, y donde falta un dato el mapa se queda gris en vez de inventarlo.',
+    takeTour: 'Enséñame el sitio',
+    explore: 'Miro por mi cuenta',
+    reopen: 'Qué es ClimaLens',
+  },
   search: {
     placeholderInline: 'Busca un lugar…',
     placeholderStandalone: 'Busca una ciudad, un país, un lugar…',

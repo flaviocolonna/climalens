@@ -23,6 +23,24 @@ export const en = {
     sectorsLong: "Who's heating the planet",
     languageAria: 'Change language',
   },
+  welcome: {
+    heading: 'What ClimaLens is',
+    lead: 'A climate map that does not stop at temperature. One hundred and forty-six years of measurements for every point on the planet, and five different questions asked of the same map: what happens here, who caused it, what you breathe, who can cope with it, who is doing what they said.',
+    placeTitle: 'Search a place, or click anywhere',
+    placeBody:
+      'How much it has warmed there, how many more days above 30 °C there are now, what the air is like. Type your year of birth and see how much happened while you were around.',
+    layersTitle: 'Ask the map a different question',
+    layersBody:
+      'The tabs at the bottom left paint the same map five ways. The first two barely resemble each other, and that is the point: who did the warming and who gets the warming are two different lists.',
+    panelsTitle: 'Six deeper reads along the top',
+    panelsBody:
+      'From the sectors heating the planet to what you can do about it, from the rising sea to how we know any of this.',
+    promise:
+      'Every number carries its source and its year beside it, and where a figure is missing the map stays grey instead of inventing one.',
+    takeTour: 'Show me around',
+    explore: 'I will look around',
+    reopen: 'What ClimaLens is',
+  },
   search: {
     placeholderInline: 'Search a place…',
     placeholderStandalone: 'Search a city, country, or place…',

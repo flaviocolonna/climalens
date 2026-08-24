@@ -11,6 +11,7 @@ import { Tour } from '@/components/Tour';
 import { FuturePanel } from '@/components/FuturePanel';
 import { SectorsPanel } from '@/components/SectorsPanel';
 import { TimelineSlider } from '@/components/TimelineSlider';
+import { Welcome } from '@/components/Welcome';
 import { loadClimateGrid, type ClimateGrid } from '@/lib/climateData';
 import { loadCountryEmissions, type CountryEmissions } from '@/lib/countryEmissions';
 import {
@@ -28,6 +29,7 @@ import type { Place } from '@/lib/openMeteo';
 import { readUrlState, writeUrlState, type PanelId } from '@/lib/urlState';
 import { TOUR_STEPS, type TourStep } from '@/lib/tour';
 import type { AttributedEvent } from '@/lib/consequences';
+import { rememberWelcome, shouldWelcome } from '@/lib/welcome';
 import { eventText } from '@/i18n/content/consequences';
 import type { SelectedPlace } from '@/types';
 import { useI18n } from '@/i18n/LocaleProvider';
@@ -57,6 +59,12 @@ export default function App() {
   const [pollution, setPollution] = useState<PollutionTable | null>(null);
   const [adaptation, setAdaptation] = useState<AdaptationTable | null>(null);
   const [pledges, setPledges] = useState<PledgeTable | null>(null);
+  /**
+   * Deciso una volta, alla prima riga di render: la presentazione si mostra a
+   * chi non l'ha mai vista e non sta seguendo un link a qualcosa di preciso.
+   * La regola completa, con il perché, sta in src/lib/welcome.ts.
+   */
+  const [welcome, setWelcome] = useState(() => shouldWelcome(INITIAL));
   const [countriesLoading, setCountriesLoading] = useState(false);
   const [countriesError, setCountriesError] = useState<string | null>(null);
 
@@ -276,6 +284,13 @@ export default function App() {
     [locale],
   );
 
+  // Chiuderla vale come averla vista, da qualunque dei due pulsanti si esca:
+  // il saluto è un saluto, non una domanda a cui si può rispondere male.
+  const dismissWelcome = useCallback(() => {
+    rememberWelcome();
+    setWelcome(false);
+  }, []);
+
   const marker = useMemo(
     () => (place ? { latitude: place.latitude, longitude: place.longitude, label: place.name } : null),
     [place],
@@ -319,6 +334,7 @@ export default function App() {
         <NavBar
           years={`${grid.meta.startYear}–${grid.meta.endYear}`}
           onSelectPlace={handleSelectPlace}
+          onAbout={() => setWelcome(true)}
           panel={panel}
           onTogglePanel={(next) => setPanel((current) => (current === next ? null : next))}
         />
@@ -428,6 +444,16 @@ export default function App() {
       {panel === 'actions' && <ActionsPanel onClose={() => setPanel(null)} />}
       {panel === 'consequences' && (
         <ConsequencesPanel onClose={() => setPanel(null)} onOpenEvent={openEvent} />
+      )}
+
+      {welcome && (
+        <Welcome
+          onDismiss={dismissWelcome}
+          onStartTour={() => {
+            dismissWelcome();
+            applyTourStep(0);
+          }}
+        />
       )}
       {panel === 'future' && <FuturePanel onClose={() => setPanel(null)} />}
       {panel === 'knowledge' && <KnowledgePanel onClose={() => setPanel(null)} />}

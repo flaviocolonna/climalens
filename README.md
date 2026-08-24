@@ -11,6 +11,33 @@ dozen other open sources named where they are used.
 
 ---
 
+## The welcome
+
+The app opens on a dark map, a bar with six entries and a selector with five
+tabs, and nowhere does it say what it is. So a first visit gets a dialog that
+answers *what this is* — the hint card at the bottom left answers *how to use
+it*, which is a different question — and then gets out of the way. Two real
+alternatives, not a yes and a disguised no: take the tour, or look around.
+
+Three rules keep it on the right side of useful, and they live in
+`src/lib/welcome.ts`:
+
+- **Once, not once per session.** `localStorage`, with the same care for
+  private browsing the locale module already takes: if storage is not there,
+  the choice simply does not stick, and that is not an error.
+- **Never in front of a shared link.** Anyone opening `?panel=actions` or
+  `?lat=…&lon=…` is following a pointed finger; putting a presentation in front
+  of that is answering a question with your own biography. `year` deliberately
+  does *not* count as shared state — the app rewrites it into the URL by itself
+  on every step, so treating it as intent would mean never greeting anybody who
+  reloaded the page.
+- **Reopenable.** The name in the top bar is a button and brings it back.
+  Without that, whoever closes it in a hurry loses the explanation for good.
+
+It closes on the promise rather than on a feature: every number carries its
+source and its year, and where a figure is missing the map stays grey instead of
+inventing one. That is the only claim worth making before showing anything.
+
 ## Start here: the tour
 
 The app grew to six full-screen panels, fourteen map metrics and a location panel
