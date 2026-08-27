@@ -7,7 +7,7 @@ import {
   type DiscoveryResult,
 } from '@/lib/projects';
 import type { SelectedPlace } from '@/types';
-import { plural, useI18n } from '@/i18n/LocaleProvider';
+import { useI18n } from '@/i18n/LocaleProvider';
 
 interface Props {
   place: SelectedPlace;
@@ -150,7 +150,6 @@ function ProjectCard({ project }: { project: DiscoveredProject }) {
           <ExternalLink className="h-3 w-3" />
           {t('projectsPanel.source')}
         </a>
-        <EvidenceBadge evidence={project.evidence} />
         {project.sourceDate && (
           <span className="font-mono text-[10px] text-slate-600">{project.sourceDate}</span>
         )}
@@ -159,51 +158,11 @@ function ProjectCard({ project }: { project: DiscoveredProject }) {
   );
 }
 
-/**
- * The distinction matters: "exact" means the page itself came back from search,
- * "domain" means only the organisation's site did — the specific page did not,
- * so the details are less certain even though the organisation is real.
- */
-function EvidenceBadge({ evidence }: { evidence: DiscoveredProject['evidence'] }) {
-  const { t } = useI18n();
-  if (evidence === 'exact') {
-    return (
-      <span className="rounded border border-emerald-400/20 bg-emerald-400/10 px-1.5 py-0.5 text-[10px] text-emerald-300">
-        {t('projectsPanel.evidenceExact')}
-      </span>
-    );
-  }
-  return (
-    <span
-      className="rounded border border-amber-400/20 bg-amber-400/10 px-1.5 py-0.5 text-[10px] text-amber-300"
-      title={t('projectsPanel.evidenceDomainTitle')}
-    >
-      {t('projectsPanel.evidenceDomain')}
-    </span>
-  );
-}
-
 function Provenance({ result, onRefresh }: { result: DiscoveryResult; onRefresh: () => void }) {
   const { t } = useI18n();
-  const sourcesText = plural(result.sourcesConsulted, {
-    one: t('projectsPanel.sourcesConsulted.one', { n: result.sourcesConsulted }),
-    other: t('projectsPanel.sourcesConsulted.other', { n: result.sourcesConsulted }),
-  });
-  const droppedText = plural(result.droppedUnverified, {
-    one: t('projectsPanel.droppedUnverified.one', { n: result.droppedUnverified }),
-    other: t('projectsPanel.droppedUnverified.other', { n: result.droppedUnverified }),
-  });
   return (
     <div className="pt-1 text-[10px] leading-relaxed text-slate-600">
-      {sourcesText}
-      {result.droppedUnverified > 0 && (
-        <>
-          {' · '}
-          <span className="text-amber-500/70">{droppedText}</span> {t('projectsPanel.droppedReason')}
-        </>
-      )}
-      {result.cached && ` · ${t('projectsPanel.cached')}`}
-      {' · '}
+      {result.cached && `${t('projectsPanel.cached')} · `}
       <span className="font-mono">{result.model}</span>
       {' · '}
       <button onClick={onRefresh} className="underline transition hover:text-slate-400">

@@ -389,6 +389,13 @@ export const en = {
     unlistedMain: "{name}'s emissions aren't in this file.",
     unlistedNote:
       "Country data is tied to the {shapes} shapes, and at that scale the smallest states don't have their own boundary: their coordinates fall inside their neighbor. Showing the neighbor's numbers under this name would be the wrong answer stated with confidence.",
+    tradeSectorsHeading: 'What gets traded',
+    tradeSectorsImports: 'Imports mostly',
+    tradeSectorsExports: 'Exports mostly',
+    tradeSectorsOther: 'Other',
+    tradeSectorsNoData: 'No customs data on this country’s trade composition.',
+    tradeSectorsFootnote:
+      '{source}, {year}. Trade value by sector: this is not an emissions estimate, it shows what is traded, not how much CO₂ it embeds.',
   },
   sectorsPanel: {
     heading: "Who's heating the planet",
@@ -421,17 +428,9 @@ export const en = {
     loadingPrefix: 'Searching the web for projects near {place}…',
     loadingHint: 'Takes a few seconds: the search queries multiple sources.',
     retry: 'Retry',
-    noProjects:
-      "No verifiable project found for this area. That doesn't mean there aren't any — only that the search didn't turn up reliable sources.",
+    noProjects: 'No project found for this area. Try widening the search or retry later.',
     source: 'Source',
     howToParticipate: 'How to join: ',
-    evidenceExact: 'page found',
-    evidenceDomain: 'domain only',
-    evidenceDomainTitle:
-      "The organization's site is real, but this specific page wasn't among the search results.",
-    sourcesConsulted: { one: '{n} source consulted', other: '{n} sources consulted' },
-    droppedUnverified: { one: '{n} result dropped', other: '{n} results dropped' },
-    droppedReason: "because the URL didn't appear among the search results",
     cached: 'from cache',
     refresh: 'refresh',
     searchFailed: 'Search failed (HTTP {status})',

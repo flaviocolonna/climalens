@@ -18,6 +18,14 @@ const LAYER_ID = 'anomaly-grid-layer';
 const COUNTRY_SOURCE = 'co2-countries';
 const COUNTRY_FILL = 'co2-countries-fill';
 const COUNTRY_LINE = 'co2-countries-line';
+/**
+ * Le etichette dei nomi dei paesi nello stile base — non nostre, vengono dal
+ * basemap CARTO. Divise in due layer per fascia di rango (i micro-stati si
+ * leggono solo a zoom alto), ma il gesto è lo stesso su entrambi.
+ */
+const COUNTRY_LABEL_LAYERS = ['place_country_1', 'place_country_2'];
+/** Il blu di un link, non inventato apposta: è lo stesso accento usato altrove nell'app. */
+const LABEL_LINK_COLOR = '#38bdf8';
 
 export interface MapMarker {
   latitude: number;
@@ -131,6 +139,61 @@ export function ClimateMap({ grid, year, marker, onPickPoint, countries, metric 
     // Deliberately mount-only: the map instance outlives prop changes.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // --- nome del paese come un link --------------------------------------
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !ready) return;
+
+    const layers = COUNTRY_LABEL_LAYERS.filter((id) => map.getLayer(id));
+    if (!layers.length) return;
+
+    // Il colore "a riposo" resta quello dello stile base — letto da lì, non
+    // riscritto a mano: così un aggiornamento del basemap non lo disallinea.
+    for (const id of layers) {
+      const base = toBaseColor(map.getPaintProperty(id, 'text-color'));
+      map.setPaintProperty(id, 'text-color', [
+        'case',
+        ['boolean', ['feature-state', 'hover'], false],
+        LABEL_LINK_COLOR,
+        base ?? '#9db6bd',
+      ] as never);
+    }
+
+    let hovered: { source: string; sourceLayer?: string; id: string | number } | null = null;
+    const clearHover = () => {
+      if (!hovered) return;
+      map.setFeatureState(hovered, { hover: false });
+      hovered = null;
+    };
+
+    const onMove = (e: maplibregl.MapLayerMouseEvent) => {
+      const feature = e.features?.[0];
+      if (!feature || feature.id === undefined) return;
+      if (hovered && hovered.id === feature.id && hovered.sourceLayer === feature.sourceLayer) return;
+      clearHover();
+      hovered = { source: feature.source, sourceLayer: feature.sourceLayer, id: feature.id };
+      map.setFeatureState(hovered, { hover: true });
+      map.getCanvas().style.cursor = 'pointer';
+    };
+
+    const onLeave = () => {
+      clearHover();
+      map.getCanvas().style.cursor = 'crosshair';
+    };
+
+    for (const id of layers) {
+      map.on('mousemove', id, onMove);
+      map.on('mouseleave', id, onLeave);
+    }
+    return () => {
+      clearHover();
+      for (const id of layers) {
+        map.off('mousemove', id, onMove);
+        map.off('mouseleave', id, onLeave);
+      }
+    };
+  }, [ready]);
 
   // --- year changes --------------------------------------------------------
   useEffect(() => {
@@ -286,6 +349,25 @@ export function ClimateMap({ grid, year, marker, onPickPoint, countries, metric 
   }, [marker]);
 
   return <div ref={containerRef} className="absolute inset-0" aria-label={t('legend.mapAriaLabel')} />;
+}
+
+/**
+ * Il colore "a riposo" del testo, come tinta piatta. Lo stile CARTO lo
+ * dichiara come funzione legacy a soglie di zoom (`{stops:[[zoom,colore],…]}`)
+ * — un'espressione `["zoom"]` come questa è valida solo come valore intero di
+ * una paint property, non incorporata dentro un `case`: il validatore la
+ * rifiuta. Si prende quindi l'ultima soglia (la tinta che si vede agli zoom a
+ * cui le etichette dei paesi restano visibili) invece di riportare la
+ * sfumatura intera — un dettaglio che si perde per restare dentro le regole
+ * dello stile.
+ */
+function toBaseColor(value: unknown): string | undefined {
+  if (typeof value === 'string') return value;
+  if (value && typeof value === 'object' && !Array.isArray(value) && 'stops' in value) {
+    const stops = (value as { stops: Array<[number, string]> }).stops;
+    return stops[stops.length - 1]?.[1];
+  }
+  return undefined;
 }
 
 /**

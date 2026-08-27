@@ -167,6 +167,14 @@ const DIVERGING = {
   strongPos: '#be3029',
 };
 
+/**
+ * Gli stessi due estremi della rampa `net`, per chi disegna import/export
+ * altrove (la scomposizione per settore in AreaEmissions) e vuole restare
+ * nella stessa lingua visiva invece di inventare una tinta nuova.
+ */
+export const NET_IMPORT_COLOR = DIVERGING.strongPos;
+export const NET_EXPORT_COLOR = DIVERGING.strongNeg;
+
 /** id → soglie e colori, locale-neutri: le etichette leggibili sono in METRIC_TEXT. */
 const METRIC_SHAPE: Record<MetricId, { kind: Metric['kind']; classes: Array<{ from: number; color: string }> }> = {
   pc: {

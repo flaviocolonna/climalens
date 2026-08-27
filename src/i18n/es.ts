@@ -390,6 +390,13 @@ export const es = {
     unlistedMain: 'Las emisiones de {name} no están en este archivo.',
     unlistedNote:
       'Los datos por país están vinculados a las formas {shapes}, y a esa escala los estados más pequeños no tienen un límite propio: sus coordenadas caen dentro del vecino. Mostrar los números del vecino bajo este nombre sería la respuesta equivocada dicha con seguridad.',
+    tradeSectorsHeading: 'Qué se comercia',
+    tradeSectorsImports: 'Importa sobre todo',
+    tradeSectorsExports: 'Exporta sobre todo',
+    tradeSectorsOther: 'Otro',
+    tradeSectorsNoData: 'No hay datos aduaneros sobre la composición del comercio de este país.',
+    tradeSectorsFootnote:
+      '{source}, {year}. Valor comercial por sector: no es una estimación de emisiones, muestra qué se comercia, no cuánto CO₂ contiene.',
   },
   sectorsPanel: {
     heading: 'Quién calienta el planeta',
@@ -422,17 +429,9 @@ export const es = {
     loadingPrefix: 'Buscando en la web proyectos cerca de {place}…',
     loadingHint: 'Tarda unos segundos: la búsqueda consulta varias fuentes.',
     retry: 'Reintentar',
-    noProjects:
-      'No se encontró ningún proyecto verificable para esta zona. Eso no significa que no los haya — solo que la búsqueda no encontró fuentes fiables.',
+    noProjects: 'No se encontró ningún proyecto para esta zona. Prueba a ampliar la búsqueda o reinténtalo más tarde.',
     source: 'Fuente',
     howToParticipate: 'Cómo participar: ',
-    evidenceExact: 'página encontrada',
-    evidenceDomain: 'solo dominio',
-    evidenceDomainTitle:
-      'El sitio de la organización es real, pero esta página en concreto no estaba entre los resultados de búsqueda.',
-    sourcesConsulted: { one: '{n} fuente consultada', other: '{n} fuentes consultadas' },
-    droppedUnverified: { one: '{n} resultado descartado', other: '{n} resultados descartados' },
-    droppedReason: 'porque la URL no aparecía entre los resultados de búsqueda',
     cached: 'de la caché',
     refresh: 'actualizar',
     searchFailed: 'Búsqueda fallida (HTTP {status})',

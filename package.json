@@ -13,11 +13,11 @@
     "data:emissions": "node scripts/build-emissions-data.mjs",
     "data:pollution": "node scripts/build-pollution-data.mjs",
     "data:progress": "node scripts/build-progress-data.mjs",
-    "test:filter": "node scripts/verify-discovery-filter.mjs",
     "data:food": "node scripts/build-food-data.mjs",
     "data:adaptation": "node scripts/build-adaptation-data.mjs",
     "data:pledges": "node scripts/build-pledges-data.mjs",
-    "data:consequences": "node scripts/build-consequences-data.mjs"
+    "data:consequences": "node scripts/build-consequences-data.mjs",
+    "data:trade": "node scripts/build-trade-sectors.mjs"
   },
   "dependencies": {
     "@upstash/redis": "^1.38.2",

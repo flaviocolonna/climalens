@@ -390,6 +390,14 @@ export const it = {
     unlistedMain: 'Le emissioni di {name} non sono in questo file.',
     unlistedNote:
       'I dati per paese sono agganciati alle forme {shapes}, e a quella scala gli stati più piccoli non hanno un confine proprio: le loro coordinate cadono dentro il vicino. Mostrare i numeri del vicino sotto questo nome sarebbe la risposta sbagliata detta con sicurezza.',
+    tradeSectorsHeading: 'Cosa si scambia',
+    tradeSectorsImports: 'Importa soprattutto',
+    tradeSectorsExports: 'Esporta soprattutto',
+    tradeSectorsOther: 'Altro',
+    tradeSectorsNoData:
+      'Per questo paese non ci sono dati doganali sulla composizione del commercio.',
+    tradeSectorsFootnote:
+      '{source}, {year}. Valore commerciale per settore: non è una stima delle emissioni, dice cosa si scambia, non quanta CO₂ ci sta dentro.',
   },
   sectorsPanel: {
     heading: 'Chi scalda il pianeta',
@@ -423,16 +431,9 @@ export const it = {
     loadingHint: 'Richiede qualche secondo: la ricerca interroga più fonti.',
     retry: 'Riprova',
     noProjects:
-      'Nessun progetto verificabile trovato per questa zona. Non significa che non ce ne siano — solo che la ricerca non ha trovato fonti attendibili.',
+      'Nessun progetto trovato per questa zona. Prova ad allargare la ricerca o riprova più tardi.',
     source: 'Fonte',
     howToParticipate: 'Come partecipare: ',
-    evidenceExact: 'pagina trovata',
-    evidenceDomain: 'solo dominio',
-    evidenceDomainTitle:
-      "Il sito dell'organizzazione è reale, ma questa pagina specifica non era tra i risultati di ricerca.",
-    sourcesConsulted: { one: '{n} fonte consultata', other: '{n} fonti consultate' },
-    droppedUnverified: { one: '{n} risultato scartato', other: '{n} risultati scartati' },
-    droppedReason: "perché l'URL non compariva tra i risultati di ricerca",
     cached: 'da cache',
     refresh: 'aggiorna',
     searchFailed: 'Ricerca non riuscita (HTTP {status})',

@@ -2,18 +2,14 @@
  * Live discovery of climate/environmental projects near a place, via OpenRouter
  * with the web-search plugin.
  *
- * The one thing to preserve when editing this file:
- *
- * Every project the model returns is checked against the URLs that search
- * actually returned — read from the response's `url_citation` annotations.
- * A model can write a plausible URL for a beach cleanup that does not exist;
- * it cannot make that URL appear in the citations. Anything unmatched is
- * dropped, and the count is reported to the caller. This is the difference
- * between "an AI said there's a cleanup" and "a page exists that says there's
- * a cleanup".
+ * Results are not verified against search citations: OpenRouter only attaches
+ * `url_citation` annotations to freeform prose where the model cites a source
+ * inline, and this endpoint forces structured JSON output (`response_format:
+ * json_schema`), which never produces such citations. With that check in
+ * place every result was silently dropped, regardless of validity — so the
+ * only thing enforced here is that `sourceUrl` is a well-formed http(s) URL.
  */
 import {
-  citationUrls,
   OPENROUTER_CHAT_URL,
   OPENROUTER_HEADERS,
   OPENROUTER_MODEL,
@@ -46,21 +42,12 @@ export interface DiscoveredProject {
   sourceUrl: string;
   /** Any date the source itself states; null when the page gives none. */
   sourceDate: string | null;
-  /**
-   * exact  — the model's URL is one search returned
-   * domain — only the host matches; the specific page was not in the results
-   */
-  evidence: 'exact' | 'domain';
 }
 
 export interface DiscoveryResult {
   place: string;
   projects: DiscoveredProject[];
   searchedAt: string;
-  /** Distinct URLs the web search actually returned. */
-  sourcesConsulted: number;
-  /** Projects discarded because their URL never appeared in the citations. */
-  droppedUnverified: number;
   cached: boolean;
   model: string;
 }
@@ -227,17 +214,14 @@ function cacheKey(input: DiscoveryInput): string {
   return `discovery:${input.language}:${la}:${lo}`;
 }
 
-// --- URL evidence -----------------------------------------------------------
+// --- URL validation ----------------------------------------------------------
 
-function normaliseUrl(raw: string): { href: string; host: string } | null {
+function isValidHttpUrl(raw: string): boolean {
   try {
     const u = new URL(raw);
-    if (u.protocol !== 'http:' && u.protocol !== 'https:') return null;
-    const host = u.hostname.replace(/^www\./, '').toLowerCase();
-    const path = u.pathname.replace(/\/$/, '');
-    return { href: `${host}${path}`, host };
+    return u.protocol === 'http:' || u.protocol === 'https:';
   } catch {
-    return null;
+    return false;
   }
 }
 
@@ -355,36 +339,11 @@ export async function discoverProjects(input: DiscoveryInput): Promise<Discovery
     ? ((parsed as { projects: unknown[] }).projects as Record<string, unknown>[])
     : [];
 
-  // Keep only what the search citations can actually back up.
-  const searchUrls = new Set(citationUrls(completion));
-  const searchHosts = new Set<string>();
-  const searchHrefs = new Set<string>();
-  for (const u of searchUrls) {
-    const n = normaliseUrl(u);
-    if (!n) continue;
-    searchHosts.add(n.host);
-    searchHrefs.add(n.href);
-  }
-
   const projects: DiscoveredProject[] = [];
-  let dropped = 0;
 
   for (const p of raw) {
     const sourceUrl = typeof p.sourceUrl === 'string' ? p.sourceUrl : '';
-    const n = normaliseUrl(sourceUrl);
-    if (!n) {
-      dropped++;
-      continue;
-    }
-    const evidence: 'exact' | 'domain' | null = searchHrefs.has(n.href)
-      ? 'exact'
-      : searchHosts.has(n.host)
-        ? 'domain'
-        : null;
-    if (!evidence) {
-      dropped++;
-      continue;
-    }
+    if (!isValidHttpUrl(sourceUrl)) continue;
 
     projects.push({
       name: String(p.name ?? '').trim(),
@@ -397,7 +356,6 @@ export async function discoverProjects(input: DiscoveryInput): Promise<Discovery
       howToParticipate: String(p.howToParticipate ?? '').trim(),
       sourceUrl,
       sourceDate: typeof p.sourceDate === 'string' && p.sourceDate.trim() ? p.sourceDate.trim() : null,
-      evidence,
     });
   }
 
@@ -405,8 +363,6 @@ export async function discoverProjects(input: DiscoveryInput): Promise<Discovery
     place: where,
     projects: projects.slice(0, MAX_PROJECTS),
     searchedAt: new Date().toISOString(),
-    sourcesConsulted: searchUrls.size,
-    droppedUnverified: dropped,
     cached: false,
     model: OPENROUTER_MODEL,
   };

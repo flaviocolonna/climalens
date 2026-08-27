@@ -48,33 +48,12 @@ export const OPENROUTER_HEADERS = {
 
 // --- response shapes --------------------------------------------------------
 
-/** Web search results come back as message annotations, not as tool blocks. */
-export interface UrlCitation {
-  type: 'url_citation';
-  url_citation: {
-    url: string;
-    title?: string;
-    content?: string;
-    start_index?: number;
-    end_index?: number;
-  };
-}
-
 export interface ChatCompletion {
   choices?: Array<{
     finish_reason?: string;
     message?: {
       content?: string | null;
-      annotations?: UrlCitation[];
     };
   }>;
   error?: { message?: string; code?: number };
-}
-
-/** Every URL the web search actually surfaced, in order. */
-export function citationUrls(completion: ChatCompletion): string[] {
-  const annotations = completion.choices?.[0]?.message?.annotations ?? [];
-  return annotations
-    .filter((a) => a?.type === 'url_citation' && typeof a.url_citation?.url === 'string')
-    .map((a) => a.url_citation.url);
 }

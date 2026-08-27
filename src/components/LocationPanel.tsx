@@ -23,6 +23,7 @@ import {
   loadCountryEmissions,
   type CountryEmissions,
 } from '@/lib/countryEmissions';
+import { loadTradeSectors, type TradeSectorTable } from '@/lib/tradeSectors';
 import { coords, degrees, signed, signedDegrees } from '@/lib/format';
 import { countryIndex } from '@/lib/geoLookup';
 import {
@@ -124,25 +125,59 @@ export function LocationPanel({ grid, place, year, onClose }: Props) {
     };
   }, []);
 
+  // Composizione settoriale del commercio: un dettaglio in più per chi apre
+  // il pannello, non un dato di cui dipenda nessun'altra parte dello schermo —
+  // un fallimento resta silenzioso, AreaEmissions mostra il proprio messaggio
+  // di "nessun dato" quando `sectors` non arriva.
+  const [tradeSectors, setTradeSectors] = useState<TradeSectorTable | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    loadTradeSectors()
+      .then((data) => {
+        if (alive) setTradeSectors(data);
+      })
+      .catch(() => { });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   const index = useMemo(() => (countries ? countryIndex(countries) : null), [countries]);
+
+  // Un punto senza nome cade dentro un confine molto più spesso di quanto
+  // suggerisca "Punto selezionato": chi clicca (o clicca il nome) di un paese
+  // sulla mappa si aspetta di leggere quel nome in testa al pannello, non
+  // un'etichetta generica — il point-in-polygon è lo stesso che il resto del
+  // pannello usa già per attribuire le emissioni a questo punto.
+  const insideCountry = useMemo(
+    () => (place.isUnnamedPoint && index ? index.at(place.latitude, place.longitude) : null),
+    [index, place.isUnnamedPoint, place.latitude, place.longitude],
+  );
 
   // Il testo che accompagna un punto senza nome è un'etichetta tradotta, non
   // un dato salvato: si ricalcola a ogni render così un cambio di lingua a
   // pannello aperto non lascia scritto il nome nella lingua di prima.
-  const displayName = place.isUnnamedPoint ? t('app.unnamedPoint') : place.name;
+  const displayName = place.isUnnamedPoint
+    ? (insideCountry?.name[locale] ?? t('app.unnamedPoint'))
+    : place.name;
   const displaySubtitle = place.isUnnamedPoint
-    ? t('app.gridCellSubtitle', {
+    ? insideCountry
+      ? null
+      : t('app.gridCellSubtitle', {
         latStep: Math.abs(grid.meta.latStep),
         lonStep: Math.abs(grid.meta.lonStep),
       })
     : place.subtitle;
 
   return (
-    <div className="pointer-events-auto flex max-h-full w-[26rem] flex-col overflow-hidden rounded-2xl border border-white/10 bg-ink-900/90 shadow-2xl backdrop-blur-xl animate-fade-up">
+    <div className="pointer-events-auto flex max-h-full min-h-[75vh] w-[30rem] flex-col overflow-hidden rounded-2xl border border-white/10 bg-ink-900/90 shadow-2xl backdrop-blur-xl animate-fade-up">
       <header className="flex items-start gap-3 border-b border-white/10 px-5 py-4">
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-lg font-semibold leading-tight text-white">{displayName}</h2>
-          <p className="mt-0.5 truncate text-xs text-slate-400">{displaySubtitle}</p>
+          {displaySubtitle && (
+            <p className="mt-0.5 truncate text-xs text-slate-400">{displaySubtitle}</p>
+          )}
           <p className="mt-1 font-mono text-[10px] text-slate-600">
             {coords(place.latitude, place.longitude, locale)}
           </p>
@@ -317,6 +352,7 @@ export function LocationPanel({ grid, place, year, onClose }: Props) {
             index={index}
             error={countriesError}
             warming={stats.warming}
+            sectors={tradeSectors}
           />
 
           <ProjectsPanel place={place} country={place.country} />
@@ -439,9 +475,8 @@ function Normal({
     <div>
       <div className="text-[10px] tracking-wide text-slate-500">{label}</div>
       <div
-        className={`font-mono text-lg font-semibold tabular-nums ${
-          highlight ? 'text-white' : 'text-slate-300'
-        }`}
+        className={`font-mono text-lg font-semibold tabular-nums ${highlight ? 'text-white' : 'text-slate-300'
+          }`}
       >
         {degrees(value, locale)}
       </div>

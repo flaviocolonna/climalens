@@ -28,16 +28,12 @@ export interface DiscoveredProject {
   howToParticipate: string;
   sourceUrl: string;
   sourceDate: string | null;
-  /** How well the source URL matched what the web search actually returned. */
-  evidence: 'exact' | 'domain';
 }
 
 export interface DiscoveryResult {
   place: string;
   projects: DiscoveredProject[];
   searchedAt: string;
-  sourcesConsulted: number;
-  droppedUnverified: number;
   cached: boolean;
   model: string;
 }

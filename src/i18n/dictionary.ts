@@ -330,6 +330,12 @@ export interface Dictionary {
     offshoreSeaNote: string;
     unlistedMain: string;
     unlistedNote: string;
+    tradeSectorsHeading: string;
+    tradeSectorsImports: string;
+    tradeSectorsExports: string;
+    tradeSectorsOther: string;
+    tradeSectorsNoData: string;
+    tradeSectorsFootnote: string;
   };
   sectorsPanel: {
     heading: string;
@@ -361,12 +367,6 @@ export interface Dictionary {
     noProjects: string;
     source: string;
     howToParticipate: string;
-    evidenceExact: string;
-    evidenceDomain: string;
-    evidenceDomainTitle: string;
-    sourcesConsulted: { one: string; other: string };
-    droppedUnverified: { one: string; other: string };
-    droppedReason: string;
     cached: string;
     refresh: string;
     searchFailed: string;

@@ -1,6 +1,11 @@
 import { useMemo } from 'react';
 import { Factory, Loader2 } from 'lucide-react';
-import type { CountryEmissions, CountryProps } from '@/lib/countryEmissions';
+import {
+  NET_EXPORT_COLOR,
+  NET_IMPORT_COLOR,
+  type CountryEmissions,
+  type CountryProps,
+} from '@/lib/countryEmissions';
 import {
   emissionsMass,
   energyIdentity,
@@ -13,9 +18,12 @@ import {
 import { signedDegrees } from '@/lib/format';
 import type { Attribution, CountryIndex } from '@/lib/geoLookup';
 import { LAND_MASK_MIN_LAT, NEAREST_MAX_KM } from '@/lib/geoLookup';
+import type { TradeSectorTable } from '@/lib/tradeSectors';
+import type { TradeSectorId } from '@/lib/tradeSectorTaxonomy';
 import { useI18n } from '@/i18n/LocaleProvider';
 import { LOCALE_TAG, type Locale } from '@/i18n/locale';
 import type { TFunction } from '@/i18n/LocaleProvider';
+import { tradeSectorText } from '@/i18n/content/tradeSectors';
 import {
   contributionDetail,
   energyIdentityText,
@@ -28,6 +36,9 @@ import {
 const BAR = '#3987e5';
 /** Il verso opposto — un pozzo non è "poca emissione". Stessa tinta del layer. */
 const ABSORBS = '#308e63';
+
+/** Righe piene per verso di scambio, oltre le quali il resto va in "altro". */
+const TOP_SECTOR_ROWS = 6;
 
 /** Sopra questa quota, la storia del paese non è quella dei combustibili. */
 const LAND_DOMINATES = 40;
@@ -49,6 +60,8 @@ interface Props {
   error: string | null;
   /** Il riscaldamento misurato in questo punto, per l'unico confronto che conta. */
   warming: number | null;
+  /** Null finché non è arrivato — o se non arriva mai, la sezione resta silenziosa. */
+  sectors: TradeSectorTable | null;
 }
 
 /**
@@ -70,6 +83,7 @@ export function AreaEmissions({
   index,
   error,
   warming,
+  sectors,
 }: Props) {
   const { locale, t } = useI18n();
   const attribution = useMemo<Attribution | null>(
@@ -110,6 +124,7 @@ export function AreaEmissions({
           warming={warming}
           locale={locale}
           t={t}
+          sectors={sectors}
         />
       )}
     </section>
@@ -124,6 +139,7 @@ function Country({
   warming,
   locale,
   t,
+  sectors,
 }: {
   props: CountryProps;
   km: number | null;
@@ -132,6 +148,7 @@ function Country({
   warming: number | null;
   locale: Locale;
   t: TFunction;
+  sectors: TradeSectorTable | null;
 }) {
   const { world, years, source, attribution, attributionUrl, shapes } = data.meta;
   const breakdown = sourceBreakdown(props, locale);
@@ -140,6 +157,8 @@ function Country({
   const popShare = populationShare(props, world);
   const landShare = breakdown?.rows.find((r) => r.id === 'land')?.share ?? 0;
   const landDominant = landShare >= LAND_DOMINATES;
+  const sectorEntry = sectors?.countries[props.iso];
+  const otherLabel = t('areaEmissions.tradeSectorsOther');
 
   return (
     <>
@@ -277,6 +296,38 @@ function Country({
         </>
       )}
 
+      {sectors && (
+        <>
+          <h4 className="mb-1.5 mt-4 text-[11px] font-medium uppercase tracking-wider text-slate-500">
+            {t('areaEmissions.tradeSectorsHeading')}
+          </h4>
+          {!sectorEntry ? (
+            <p className="text-[11px] leading-relaxed text-slate-500">
+              {t('areaEmissions.tradeSectorsNoData')}
+            </p>
+          ) : (
+            <>
+              <SectorRows
+                label={t('areaEmissions.tradeSectorsImports')}
+                rows={topSectorRows(sectorEntry.imports, locale, otherLabel)}
+                color={NET_IMPORT_COLOR}
+              />
+              <SectorRows
+                label={t('areaEmissions.tradeSectorsExports')}
+                rows={topSectorRows(sectorEntry.exports, locale, otherLabel)}
+                color={NET_EXPORT_COLOR}
+              />
+              <p className="mt-1.5 text-[10px] leading-relaxed text-slate-600">
+                {t('areaEmissions.tradeSectorsFootnote', {
+                  source: sectors.meta.source,
+                  year: sectorEntry.year,
+                })}
+              </p>
+            </>
+          )}
+        </>
+      )}
+
       <h4 className="mb-1.5 mt-4 text-[11px] font-medium uppercase tracking-wider text-slate-500">
         {t('areaEmissions.whyMuchHeading')}
       </h4>
@@ -344,6 +395,62 @@ function Metric({
         {extra && <span className="text-slate-400">{extra}. </span>}
         {why}
       </dd>
+    </div>
+  );
+}
+
+/** Le prime {TOP_SECTOR_ROWS} voci per quota, il resto ripiegato in "altro". */
+function topSectorRows(
+  record: Partial<Record<TradeSectorId, number>>,
+  locale: Locale,
+  otherLabel: string,
+): Array<{ key: string; label: string; share: number }> {
+  const sorted = (Object.entries(record) as Array<[TradeSectorId, number]>)
+    .filter(([, share]) => share > 0)
+    .sort((a, b) => b[1] - a[1]);
+  const top = sorted.slice(0, TOP_SECTOR_ROWS);
+  const rest = sorted.slice(TOP_SECTOR_ROWS).reduce((sum, [, share]) => sum + share, 0);
+  const rows = top.map(([id, share]) => ({
+    key: id as string,
+    label: tradeSectorText(id, locale).name,
+    share,
+  }));
+  if (rest > 0.5) rows.push({ key: 'other', label: otherLabel, share: rest });
+  return rows;
+}
+
+function SectorRows({
+  label,
+  rows,
+  color,
+}: {
+  label: string;
+  rows: Array<{ key: string; label: string; share: number }>;
+  color: string;
+}) {
+  if (!rows.length) return null;
+  return (
+    <div className="mb-2">
+      <p className="mb-1 text-[10px] uppercase tracking-wider text-slate-500">{label}</p>
+      <div className="space-y-1">
+        {rows.map((row) => (
+          <div
+            key={row.key}
+            className="relative overflow-hidden rounded border border-white/5 bg-white/[0.03]"
+          >
+            <div
+              className="absolute inset-y-0 left-0"
+              style={{ width: `${row.share}%`, background: `${color}40` }}
+            />
+            <div className="relative flex items-baseline gap-2 px-2 py-1 text-xs">
+              <span className="min-w-0 flex-1 truncate text-slate-200">{row.label}</span>
+              <span className="shrink-0 font-mono tabular-nums text-slate-300">
+                {Math.round(row.share)}%
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
